@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QInspect AI — AI画像品質検査・トレーサビリティ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:       #f0f4f8;
+      --bg-alt:   #e8edf3;
+      --surface:  #ffffff;
+      --sf2:      #f8fafc;
+      --border:   #e2e8f0;
+      --border-b: #cbd5e1;
+      --text:     #0f172a;
+      --text-2:   #475569;
+      --text-3:   #94a3b8;
+      --navy:     #0f172a;
+      --blue:     #2563eb;
+      --blue-lt:  #dbeafe;
+      --green:    #059669;
+      --green-lt: #d1fae5;
+      --amber:    #d97706;
+      --amber-lt: #fef3c7;
+      --red:      #dc2626;
+      --red-lt:   #fee2e2;
+      --purple:   #7c3aed;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;}
+
+    body {
+      background:var(--bg);
+      color:var(--text);
+      font-family:'Inter',-apple-system,sans-serif;
+      font-size:14px; line-height:1.5; min-height:100vh;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    .header {
+      background:var(--navy);
+      box-shadow:0 2px 12px rgba(0,0,0,.28);
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      height:60px; display:flex; align-items:center; padding:0 24px; gap:20px;
+    }
+    .logo {
+      display:flex;align-items:center;gap:10px;
+      font-weight:700;font-size:15px;color:#fff;
+      white-space:nowrap;text-decoration:none;
+    }
+    .logo-icon {
+      width:34px;height:34px;
+      background:linear-gradient(135deg,#dc2626,#f59e0b);
+      border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;
+    }
+    .logo-sub {
+      font-size:9px;color:rgba(255,255,255,.42);
+      font-family:'IBM Plex Mono',monospace;letter-spacing:.12em;margin-top:1px;
+    }
+    .nav-tabs{display:flex;gap:3px;flex:1;}
+    .nav-tab {
+      padding:7px 15px;border-radius:7px;cursor:pointer;
+      font-size:13px;font-weight:500;color:rgba(255,255,255,.52);
+      transition:all .18s;border:1px solid transparent;white-space:nowrap;
+    }
+    .nav-tab:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.07);}
+    .nav-tab.active{color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.16);}
+    .header-right{display:flex;align-items:center;gap:14px;margin-left:auto;}
+    .ai-status{display:flex;align-items:center;gap:6px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:#34d399;}
+    .ai-dot{width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+    .user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;}
+
+    /* ── LAYOUT ──────────────────────────────────────────── */
+    .main{padding-top:60px;min-height:100vh;}
+    .page{display:none;padding:28px 28px 56px;max-width:1440px;margin:0 auto;}
+    .page.active{display:block;animation:fadeIn .25s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+    /* ── COMMON ──────────────────────────────────────────── */
+    .sec-title{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.02em;}
+    .sec-sub{font-size:12px;color:var(--text-3);margin-top:3px;}
+    .sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .chart-title{font-size:14px;font-weight:700;color:var(--text);}
+    .chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+
+    /* ── KPI CARDS ───────────────────────────────────────── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+    .kpi-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      padding:20px 20px 16px;position:relative;overflow:hidden;
+      box-shadow:0 1px 3px rgba(0,0,0,.05);transition:box-shadow .2s,transform .2s;
+    }
+    .kpi-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.1);transform:translateY(-2px);}
+    .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+    .kpi-card.blue::before{background:linear-gradient(90deg,#2563eb,#60a5fa);}
+    .kpi-card.green::before{background:linear-gradient(90deg,#059669,#34d399);}
+    .kpi-card.red::before{background:linear-gradient(90deg,#dc2626,#f87171);}
+    .kpi-card.amber::before{background:linear-gradient(90deg,#d97706,#fbbf24);}
+    .kpi-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px;}
+    .kpi-val{font-size:34px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:8px;}
+    .kpi-card.blue .kpi-val{color:var(--blue);}
+    .kpi-card.green .kpi-val{color:var(--green);}
+    .kpi-card.red .kpi-val{color:var(--red);}
+    .kpi-card.amber .kpi-val{color:var(--amber);}
+    .kpi-trend{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px;}
+    .up{color:var(--green);font-weight:600;} .down{color:var(--red);font-weight:600;}
+    .kpi-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:40px;opacity:.07;pointer-events:none;}
+
+    /* ── ALERTS ──────────────────────────────────────────── */
+    .alert-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
+    .alert-item:last-child{border-bottom:none;padding-bottom:0;}
+    .adot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+    .adot.danger{background:var(--red);animation:pulse 1.5s infinite;}
+    .adot.warn{background:var(--amber);}
+    .adot.info{background:var(--blue);}
+    .adot.ok{background:var(--green);}
+    .a-title{font-size:13px;font-weight:600;}
+    .a-desc{font-size:12px;color:var(--text-2);margin-top:2px;line-height:1.6;}
+    .a-time{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-3);white-space:nowrap;}
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;font-family:'Inter',sans-serif;}
+    .btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(37,99,235,.3);}
+    .btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.4);}
+    .btn-ghost{background:var(--surface);color:var(--text-2);border:1px solid var(--border);}
+    .btn-ghost:hover{color:var(--text);border-color:var(--border-b);}
+    .btn-ai{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(220,38,38,.3);}
+    .btn-ai::after{content:'';position:absolute;top:-50%;left:-60%;width:60%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shimmer 2.5s infinite;}
+    @keyframes shimmer{0%{left:-60%;}100%{left:120%;}}
+    .btn-ai:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(220,38,38,.4);}
+    .btn-ai:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .badge{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border-radius:5px;font-weight:700;}
+    .badge-live{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
+    .badge-ai{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
+
+    /* ── AI LOADING ──────────────────────────────────────── */
+    .ai-loading{display:none;align-items:center;gap:8px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--red);}
+    .ai-loading.show{display:flex;}
+    .ai-spin{width:15px;height:15px;border:2px solid rgba(220,38,38,.18);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── CHART GRID ──────────────────────────────────────── */
+    .chart-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+
+    /* ── INSPECTION PAGE ─────────────────────────────────── */
+    .prod-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+    .prod-tab{
+      padding:9px 18px;border-radius:8px;cursor:pointer;
+      font-size:13px;font-weight:500;color:var(--text-2);
+      background:var(--surface);border:1px solid var(--border);
+      transition:all .18s;font-family:'Inter',sans-serif;
+    }
+    .prod-tab:hover{color:var(--text);border-color:var(--border-b);}
+    .prod-tab.active{background:var(--red-lt);color:var(--red);border-color:#fca5a5;font-weight:700;}
+
+    .inspect-layout{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px;}
+    .inspect-canvas-wrap{
+      position:relative;background:#d4d8df;
+      border-radius:12px;overflow:hidden;
+      border:1px solid var(--border);
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+    }
+    #inspCanvas{display:block;width:100%;height:auto;}
+
+    /* Scan line */
+    .scan-line{
+      position:absolute;left:0;right:0;height:3px;
+      background:linear-gradient(90deg,transparent,rgba(37,99,235,.9),transparent);
+      box-shadow:0 0 12px 4px rgba(37,99,235,.5);
+      top:-4px;display:none;pointer-events:none;
+      transition:top .02s linear;
+    }
+    .scan-line.scanning{display:block;}
+
+    /* Detection boxes */
+    .detect-overlay{position:absolute;inset:0;pointer-events:none;}
+    .dbox{
+      position:absolute;opacity:0;transition:opacity .3s ease;
+      box-sizing:border-box;
+    }
+    .dbox.show{opacity:1;}
+    .dc{position:absolute;width:12px;height:12px;}
+    .dc.tl{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid;}
+    .dc.tr{top:-1px;right:-1px;border-top:2px solid;border-right:2px solid;}
+    .dc.bl{bottom:-1px;left:-1px;border-bottom:2px solid;border-left:2px solid;}
+    .dc.br{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid;}
+    .dbox.fail .dc{border-color:#dc2626;}
+    .dbox.warn .dc{border-color:#d97706;}
+    .dbox.ok .dc{border-color:#059669;}
+    .dbox-inner{
+      position:absolute;inset:0;
+    }
+    .dbox.fail .dbox-inner{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);}
+    .dbox.warn .dbox-inner{background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);}
+    .dbox.ok .dbox-inner{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);}
+    .dbox-label{
+      position:absolute;bottom:calc(100% + 4px);left:0;
+      font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;
+      padding:2px 6px;border-radius:3px;white-space:nowrap;
+    }
+    .dbox.fail .dbox-label{background:#dc2626;color:#fff;}
+    .dbox.warn .dbox-label{background:#d97706;color:#fff;}
+    .dbox.ok .dbox-label{background:#059669;color:#fff;}
+    .conf-tag{
+      position:absolute;top:calc(100% + 3px);right:0;
+      font-size:9px;font-family:'IBM Plex Mono',monospace;
+      color:var(--text-3);white-space:nowrap;
+    }
+
+    /* Verdict overlay */
+    .verdict-overlay{
+      position:absolute;inset:0;display:none;
+      align-items:center;justify-content:center;
+      background:rgba(255,255,255,.12);backdrop-filter:blur(2px);
+    }
+    .verdict-overlay.show{display:flex;}
+    .verdict-badge{
+      padding:18px 40px;border-radius:16px;text-align:center;
+      animation:verdictPop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes verdictPop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .verdict-badge.fail{background:rgba(220,38,38,.92);box-shadow:0 8px 40px rgba(220,38,38,.5);}
+    .verdict-badge.pass{background:rgba(5,150,105,.92);box-shadow:0 8px 40px rgba(5,150,105,.5);}
+    .verdict-label{font-size:36px;font-weight:900;color:#fff;letter-spacing:.05em;}
+    .verdict-sub{font-size:13px;color:rgba(255,255,255,.8);margin-top:4px;}
+
+    /* Results panel */
+    .results-panel{display:flex;flex-direction:column;gap:14px;}
+    .lot-info-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .lot-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .lot-row:last-child{border-bottom:none;}
+    .lot-key{color:var(--text-3);font-weight:600;}
+    .lot-val{color:var(--text);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+    .detect-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);flex:1;}
+    .detect-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text);}
+    .detect-item{
+      display:flex;align-items:flex-start;gap:10px;
+      padding:10px 0;border-bottom:1px solid var(--border);
+    }
+    .detect-item:last-child{border-bottom:none;padding-bottom:0;}
+    .sev-badge{
+      flex-shrink:0;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;
+    }
+    .sev-critical{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
+    .sev-warn{background:var(--amber-lt);color:var(--amber);border:1px solid #fcd34d;}
+    .sev-ok{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
+    .detect-name{font-size:13px;font-weight:600;color:var(--text);}
+    .detect-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
+    .conf-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:5px;}
+    .conf-bar-bg{flex:1;height:4px;background:var(--bg-alt);border-radius:2px;overflow:hidden;}
+    .conf-bar-fill{height:100%;border-radius:2px;transition:width 1s ease;}
+    .conf-num{font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;flex-shrink:0;}
+    .score-display{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .score-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px;}
+    .score-num{font-size:40px;font-weight:900;font-family:'IBM Plex Mono',monospace;line-height:1;}
+    .score-pass{color:var(--green);}
+    .score-fail{color:var(--red);}
+    .score-bar-bg{height:8px;background:var(--bg-alt);border-radius:4px;margin-top:12px;overflow:hidden;}
+    .score-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+    .insp-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px;}
+
+    /* ── TRACEABILITY ─────────────────────────────────────── */
+    .search-bar{
+      display:flex;gap:10px;align-items:center;margin-bottom:24px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;padding:12px 16px;
+      box-shadow:0 1px 3px rgba(0,0,0,.05);
+    }
+    .search-ico{color:var(--text-3);font-size:16px;}
+    .search-input{
+      flex:1;border:none;outline:none;font-size:14px;
+      font-family:'IBM Plex Mono',monospace;color:var(--text);background:transparent;
+    }
+    .lot-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+    .lot-meta-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;padding:16px;
+      box-shadow:0 1px 3px rgba(0,0,0,.05);
+    }
+    .lm-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
+    .lm-val{font-size:15px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;}
+    .lm-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
+
+    /* Process timeline */
+    .timeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow-x:auto;}
+    .timeline{display:flex;align-items:flex-start;gap:0;min-width:900px;}
+    .t-node{flex:1;text-align:center;position:relative;}
+    .t-node::after{
+      content:'';position:absolute;top:24px;left:50%;width:100%;height:2px;
+      background:var(--border-b);z-index:0;
+    }
+    .t-node:last-child::after{display:none;}
+    .t-icon{
+      width:48px;height:48px;border-radius:50%;border:2px solid;
+      display:flex;align-items:center;justify-content:center;
+      font-size:20px;margin:0 auto 10px;position:relative;z-index:1;background:var(--surface);
+    }
+    .t-icon.done{border-color:var(--green);background:var(--green-lt);}
+    .t-icon.current{border-color:var(--blue);background:var(--blue-lt);animation:ring 1.5s infinite;}
+    @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.4);}50%{box-shadow:0 0 0 8px rgba(37,99,235,0);}}
+    .t-icon.warn{border-color:var(--red);background:var(--red-lt);}
+    .t-title{font-size:12px;font-weight:700;color:var(--text);}
+    .t-sub{font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.4;}
+    .t-date{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-3);margin-top:4px;}
+    .t-tag{
+      display:inline-block;margin-top:6px;
+      padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;
+    }
+    .t-tag.ok{background:var(--green-lt);color:var(--green);}
+    .t-tag.ng{background:var(--red-lt);color:var(--red);}
+    .t-tag.wip{background:var(--blue-lt);color:var(--blue);}
+
+    /* Genealogy */
+    .gene-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+    .gene-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .gene-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .gene-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .gene-item:last-child{border-bottom:none;padding-bottom:0;}
+    .gene-ico{font-size:18px;}
+    .gene-name{font-weight:600;color:var(--text);}
+    .gene-detail{font-size:11px;color:var(--text-3);margin-top:1px;}
+    .gene-val{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-2);font-weight:600;}
+
+    /* Sibling lots */
+    .sib-table{width:100%;border-collapse:collapse;}
+    .sib-table th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);background:var(--sf2);border-bottom:1px solid var(--border);}
+    .sib-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);}
+    .sib-table tr:last-child td{border-bottom:none;}
+    .sib-table tr:hover td{background:#f8faff;}
+    .lot-code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-2);}
+    .sbadge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+    .sb-ok{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
+    .sb-ng{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
+    .sb-wip{background:var(--blue-lt);color:var(--blue);border:1px solid #93c5fd;}
+
+    /* ── REPORT PAGE ─────────────────────────────────────── */
+    .report-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+    .rkpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .rkpi-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
+    .rkpi-val{font-size:26px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
+    .rkpi-trend{font-size:11px;color:var(--text-3);margin-top:4px;}
+    .ai-pred-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
+    .pred-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .pred-icon{font-size:26px;margin-bottom:10px;}
+    .pred-val{font-size:26px;font-weight:800;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;}
+    .pred-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
+    .pred-desc{font-size:12px;color:var(--text-2);line-height:1.65;}
+
+    /* ── SCROLLBAR ───────────────────────────────────────── */
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:var(--bg);}
+    ::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:3px;}
+
+    @media(max-width:1100px){
+      .kpi-grid,.lot-meta-grid,.report-kpi-grid{grid-template-columns:repeat(2,1fr);}
+      .inspect-layout{grid-template-columns:1fr;}
+      .chart-grid2,.gene-grid{grid-template-columns:1fr;}
+    }
+    @media(max-width:720px){
+      .page{padding:16px 16px 40px;}
+      .kpi-grid{grid-template-columns:1fr 1fr;}
+      .ai-pred-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════ HEADER ════════════════════════════════════════════ -->
+<header class="header">
+  <a class="logo" href="#">
+    <div class="logo-icon">🔬</div>
+    <div>
+      <div>QInspect <span style="color:#fca5a5">AI</span></div>
+      <div class="logo-sub">VISUAL DEFECT DETECTION SYSTEM</div>
+    </div>
+  </a>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('dash',this)">📊 ダッシュボード</div>
+    <div class="nav-tab" onclick="showPage('inspect',this)">🔬 AI画像検査</div>
+    <div class="nav-tab" onclick="showPage('trace',this)">🔗 トレーサビリティ</div>
+    <div class="nav-tab" onclick="showPage('report',this)">📈 品質レポート</div>
+  </nav>
+  <div class="header-right">
+    <div class="ai-status"><div class="ai-dot"></div>AI VISION ONLINE</div>
+    <div class="user-avatar">高</div>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ════ PAGE 1: DASHBOARD ═════════════════════════════════ -->
+<div class="page active" id="page-dash">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">品質管理ダッシュボード</div>
+      <div class="sec-sub">2026年5月4日（月）｜ AI画像検査リアルタイム監視中</div>
+    </div>
+    <button class="btn btn-ghost">🔄 更新</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">本日の検査数</div>
+      <div class="kpi-val" id="k1">—</div>
+      <div class="kpi-trend"><span class="up">↑ 47件</span>&nbsp;昨日比</div>
+      <div class="kpi-icon">🔬</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">合格率（本日）</div>
+      <div class="kpi-val" id="k2">—</div>
+      <div class="kpi-trend"><span class="up">↑ 0.4%</span>&nbsp;昨日比</div>
+      <div class="kpi-icon">✅</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">不良検出数（本日）</div>
+      <div class="kpi-val" id="k3">—</div>
+      <div class="kpi-trend"><span class="down">↑ 3件</span>&nbsp;昨日比</div>
+      <div class="kpi-icon">⚠️</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">AI検査精度</div>
+      <div class="kpi-val" id="k4">—</div>
+      <div class="kpi-trend"><span class="up">↑ 0.3%</span>&nbsp;先月比</div>
+      <div class="kpi-icon">🤖</div>
+    </div>
+  </div>
+
+  <div class="chart-grid2">
+    <div class="card">
+      <div class="chart-hdr">
+        <div class="chart-title">週別不良率トレンド</div>
+        <span class="badge badge-live">● LIVE</span>
+      </div>
+      <canvas id="trendChart" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="chart-hdr">
+        <div class="chart-title">不良モード別構成比（今月）</div>
+        <span class="badge badge-ai">AI分類</span>
+      </div>
+      <canvas id="modeChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chart-hdr">
+      <div class="chart-title">AIアラート &amp; 品質インサイト</div>
+      <span style="font-size:12px;color:var(--text-3)">4件</span>
+    </div>
+    <div class="alert-item">
+      <div class="adot danger"></div>
+      <div style="flex:1">
+        <div class="a-title">🚨 ライン3 連続不合格を検知（5件連続）</div>
+        <div class="a-desc">ダイカスト工程ライン3で気泡不良が連続発生。金型温度の異常が原因と推定。設備点検を推奨します。</div>
+      </div>
+      <div class="a-time">7分前</div>
+    </div>
+    <div class="alert-item">
+      <div class="adot warn"></div>
+      <div style="flex:1">
+        <div class="a-title">📦 ロット L2605-089 気泡不良率が上昇傾向</div>
+        <div class="a-desc">同ロット内の気泡検出率が2.1%→5.8%に上昇。材料ロットまたは成形条件の確認を推奨します。</div>
+      </div>
+      <div class="a-time">32分前</div>
+    </div>
+    <div class="alert-item">
+      <div class="adot info"></div>
+      <div style="flex:1">
+        <div class="a-title">🤖 AIモデル更新完了 — 検出精度 +0.3%向上</div>
+        <div class="a-desc">新学習データ4,820件を追加学習。微細クラック検出の偽陽性率が1.2%→0.4%に改善しました。</div>
+      </div>
+      <div class="a-time">2時間前</div>
+    </div>
+    <div class="alert-item">
+      <div class="adot ok"></div>
+      <div style="flex:1">
+        <div class="a-title">✅ 今月の合格率目標 97.0% を達成</div>
+        <div class="a-desc">5月度品質目標（合格率97.0%）を本日時点で達成。現状維持で月末も目標超過が見込まれます。</div>
+      </div>
+      <div class="a-time">昨日</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE 2: AI画像検査 ════════════════════════════════ -->
+<div class="page" id="page-inspect">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">AI画像検査エンジン</div>
+      <div class="sec-sub">ディープラーニングによるリアルタイム欠陥検出・判定</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="ai-loading" id="insp-loading"><div class="ai-spin"></div>AIモデル推論中...</div>
+      <button class="btn btn-ai" id="insp-btn" onclick="runInspection()">🔬 AI検査実行</button>
+    </div>
+  </div>
+
+  <!-- Product selector -->
+  <div class="prod-tabs">
+    <button class="prod-tab active" onclick="selectProduct('A',this)">
+      🔩 製品A — 精密ダイカスト部品 ADC-X200
+    </button>
+    <button class="prod-tab" onclick="selectProduct('B',this)">
+      🖥️ 製品B — 電子基板 PCB-Z400
+    </button>
+    <button class="prod-tab" onclick="selectProduct('C',this)">
+      ⬡ 製品C — 射出成形品 INJ-S100
+    </button>
+  </div>
+
+  <div class="inspect-layout">
+    <!-- Canvas inspection view -->
+    <div>
+      <div class="inspect-canvas-wrap" id="canvasWrap">
+        <canvas id="inspCanvas" width="640" height="360"></canvas>
+        <div class="scan-line" id="scanLine"></div>
+        <div class="detect-overlay" id="detectOverlay"></div>
+        <div class="verdict-overlay" id="verdictOverlay">
+          <div class="verdict-badge" id="verdictBadge">
+            <div class="verdict-label" id="verdictLabel">—</div>
+            <div class="verdict-sub" id="verdictSub"></div>
+          </div>
+        </div>
+      </div>
+      <div class="insp-controls" style="margin-top:14px">
+        <button class="btn btn-ghost" onclick="resetInspection()">↩ リセット</button>
+        <span style="font-size:11px;color:var(--text-3);font-family:'IBM Plex Mono',monospace" id="insp-status">待機中 — 製品をセットして検査を開始してください</span>
+      </div>
+    </div>
+
+    <!-- Results panel -->
+    <div class="results-panel">
+      <!-- Lot info -->
+      <div class="lot-info-card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">📋 ロット情報</div>
+        <div class="lot-row">
+          <span class="lot-key">製品名</span>
+          <span class="lot-val" id="r-name">ADC-X200</span>
+        </div>
+        <div class="lot-row">
+          <span class="lot-key">ロット番号</span>
+          <span class="lot-val" id="r-lot">L2605-089</span>
+        </div>
+        <div class="lot-row">
+          <span class="lot-key">材質</span>
+          <span class="lot-val" id="r-mat">ADC12アルミ合金</span>
+        </div>
+        <div class="lot-row">
+          <span class="lot-key">検査モデル</span>
+          <span class="lot-val">DL-VGG v3.2</span>
+        </div>
+      </div>
+
+      <!-- Detection list -->
+      <div class="detect-list">
+        <div class="detect-title">🎯 検出結果 <span id="detect-count" style="color:var(--text-3);font-weight:400;font-size:12px">（検査前）</span></div>
+        <div id="detect-items">
+          <div style="font-size:12px;color:var(--text-3);text-align:center;padding:24px 0">
+            検査を実行すると結果が表示されます
+          </div>
+        </div>
+      </div>
+
+      <!-- Score -->
+      <div class="score-display">
+        <div class="score-label">品質スコア</div>
+        <div class="score-num score-fail" id="score-num">—</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px" id="score-sub">合格基準: 80.0点以上</div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" id="score-bar" style="width:0%;background:var(--red)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE 3: トレーサビリティ ══════════════════════════ -->
+<div class="page" id="page-trace">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">トレーサビリティ追跡</div>
+      <div class="sec-sub">材料調達 → 製造 → 検査 → 出荷先までの完全追跡</div>
+    </div>
+    <button class="btn btn-primary">📄 トレーサレポート出力</button>
+  </div>
+
+  <!-- Lot search -->
+  <div class="search-bar">
+    <span class="search-ico">🔍</span>
+    <input class="search-input" type="text" value="L2605-089" placeholder="ロット番号・製品番号・シリアルNoで検索">
+    <button class="btn btn-primary" style="padding:6px 14px;font-size:12px">追跡</button>
+  </div>
+
+  <!-- Lot meta -->
+  <div class="lot-meta-grid">
+    <div class="lot-meta-card">
+      <div class="lm-label">追跡ロット</div>
+      <div class="lm-val">L2605-089</div>
+      <div class="lm-sub">精密ダイカスト部品 ADC-X200</div>
+    </div>
+    <div class="lot-meta-card">
+      <div class="lm-label">製造数量</div>
+      <div class="lm-val">1,200 個</div>
+      <div class="lm-sub">合格 1,165 / 不合格 35</div>
+    </div>
+    <div class="lot-meta-card">
+      <div class="lm-label">製造期間</div>
+      <div class="lm-val">2026-05-02</div>
+      <div class="lm-sub">〜 2026-05-04（3日間）</div>
+    </div>
+    <div class="lot-meta-card">
+      <div class="lm-label">ステータス</div>
+      <div class="lm-val" style="color:var(--amber)">出荷保留</div>
+      <div class="lm-sub">気泡不良率超過 — 上位承認待ち</div>
+    </div>
+  </div>
+
+  <!-- Process timeline -->
+  <div class="timeline-wrap">
+    <div style="font-size:14px;font-weight:700;margin-bottom:24px;color:var(--text)">⚙️ 生産プロセス追跡</div>
+    <div class="timeline">
+      <div class="t-node">
+        <div class="t-icon done">🏭</div>
+        <div class="t-title">原材料調達</div>
+        <div class="t-sub">住友軽金属工業<br>ADC12合金 インゴット</div>
+        <div class="t-date">05/01</div>
+        <span class="t-tag ok">合格</span>
+      </div>
+      <div class="t-node">
+        <div class="t-icon done">📦</div>
+        <div class="t-title">素材受入検査</div>
+        <div class="t-sub">成分分析・寸法検査<br>ロット抜取 50個/1,200個</div>
+        <div class="t-date">05/02 09:30</div>
+        <span class="t-tag ok">合格</span>
+      </div>
+      <div class="t-node">
+        <div class="t-icon done">🔩</div>
+        <div class="t-title">ダイカスト成形</div>
+        <div class="t-sub">射出圧力 680kg/cm²<br>金型温度 210°C</div>
+        <div class="t-date">05/02〜03</div>
+        <span class="t-tag ok">完了</span>
+      </div>
+      <div class="t-node">
+        <div class="t-icon done">⚙️</div>
+        <div class="t-title">機械加工</div>
+        <div class="t-sub">NC旋盤 3工程<br>精度 ±0.05mm</div>
+        <div class="t-date">05/03</div>
+        <span class="t-tag ok">合格</span>
+      </div>
+      <div class="t-node">
+        <div class="t-icon warn">🔬</div>
+        <div class="t-title">AI画像検査</div>
+        <div class="t-sub">欠陥検出 35件<br>不合格率 2.9%（基準2.0%超過）</div>
+        <div class="t-date">05/04 11:20</div>
+        <span class="t-tag ng">要対応</span>
+      </div>
+      <div class="t-node">
+        <div class="t-icon current">🚚</div>
+        <div class="t-title">出荷</div>
+        <div class="t-sub">田中製作所 様<br>納期: 05/12</div>
+        <div class="t-date">保留中</div>
+        <span class="t-tag wip">承認待ち</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Genealogy -->
+  <div class="gene-grid">
+    <div class="gene-card">
+      <div class="gene-title">⬆️ 上流トレース（使用材料・部品）</div>
+      <div class="gene-item">
+        <span class="gene-ico">🏭</span>
+        <div>
+          <div class="gene-name">住友軽金属工業 ADC12合金インゴット</div>
+          <div class="gene-detail">仕入先ロット: SL-2604-3821</div>
+        </div>
+        <span class="gene-val">480kg</span>
+      </div>
+      <div class="gene-item">
+        <span class="gene-ico">🔧</span>
+        <div>
+          <div class="gene-name">金型 — ADC-X200-M01</div>
+          <div class="gene-detail">型寿命: 82,450 / 150,000ショット</div>
+        </div>
+        <span class="gene-val">54.9%</span>
+      </div>
+      <div class="gene-item">
+        <span class="gene-ico">🛢️</span>
+        <div>
+          <div class="gene-name">離型剤 — DiecoatX Pro #3</div>
+          <div class="gene-detail">購入ロット: DC-2605-012</div>
+        </div>
+        <span class="gene-val">12L</span>
+      </div>
+      <div class="gene-item">
+        <span class="gene-ico">⚡</span>
+        <div>
+          <div class="gene-name">製造設備 — ダイカストマシン #3</div>
+          <div class="gene-detail">最終点検: 2026-04-28</div>
+        </div>
+        <span class="gene-val">稼動中</span>
+      </div>
+    </div>
+    <div class="gene-card">
+      <div class="gene-title">⬇️ 下流トレース（出荷・使用先）</div>
+      <div class="gene-item">
+        <span class="gene-ico">🏢</span>
+        <div>
+          <div class="gene-name">株式会社田中製作所</div>
+          <div class="gene-detail">受注番号: ORD-2605-001 / 850個予定</div>
+        </div>
+        <span class="gene-val" style="color:var(--amber)">保留</span>
+      </div>
+      <div class="gene-item">
+        <span class="gene-ico">🚗</span>
+        <div>
+          <div class="gene-name">最終製品: 自動車ドアハンドル機構部品</div>
+          <div class="gene-detail">田中製作所組立後 → 三菱自動車向け</div>
+        </div>
+        <span class="gene-val">—</span>
+      </div>
+      <div class="gene-item">
+        <span class="gene-ico">♻️</span>
+        <div>
+          <div class="gene-name">不合格品 35個 — 社内再溶解リサイクル</div>
+          <div class="gene-detail">材料回収率 96.2% / 処理予定 05/06</div>
+        </div>
+        <span class="gene-val">35個</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sibling lots -->
+  <div class="card">
+    <div class="chart-hdr">
+      <div class="chart-title">同材料ロット — 関連製造ロット一覧</div>
+      <span style="font-size:12px;color:var(--text-3)">仕入先ロット SL-2604-3821 使用品</span>
+    </div>
+    <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border)">
+      <table class="sib-table">
+        <thead>
+          <tr><th>ロット番号</th><th>製品</th><th>製造数</th><th>合格率</th><th>ステータス</th><th>主要不良</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="lot-code">L2605-089</span></td>
+            <td>ADC-X200</td><td><b>1,200</b>個</td>
+            <td style="color:var(--red);font-weight:700">97.1%</td>
+            <td><span class="sbadge sb-ng">⚠️ 出荷保留</span></td>
+            <td>気泡・クラック</td>
+          </tr>
+          <tr>
+            <td><span class="lot-code">L2605-085</span></td>
+            <td>ADC-X200</td><td><b>980</b>個</td>
+            <td style="color:var(--green);font-weight:700">98.8%</td>
+            <td><span class="sbadge sb-ok">✅ 出荷済</span></td>
+            <td>表面傷（軽微）</td>
+          </tr>
+          <tr>
+            <td><span class="lot-code">L2605-081</span></td>
+            <td>ADC-Z500</td><td><b>650</b>個</td>
+            <td style="color:var(--green);font-weight:700">99.2%</td>
+            <td><span class="sbadge sb-ok">✅ 出荷済</span></td>
+            <td>なし</td>
+          </tr>
+          <tr>
+            <td><span class="lot-code">L2605-077</span></td>
+            <td>ADC-X200</td><td><b>1,100</b>個</td>
+            <td style="color:var(--green);font-weight:700">98.5%</td>
+            <td><span class="sbadge sb-ok">✅ 出荷済</span></td>
+            <td>寸法不良（軽微）</td>
+          </tr>
+          <tr>
+            <td><span class="lot-code">L2605-094</span></td>
+            <td>ADC-Y300</td><td><b>800</b>個</td>
+            <td style="color:var(--blue);font-weight:700">—</td>
+            <td><span class="sbadge sb-wip">🔵 生産中</span></td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE 4: 品質レポート ══════════════════════════════ -->
+<div class="page" id="page-report">
+  <div class="sec-header">
+    <div>
+      <div class="sec-title">品質分析レポート</div>
+      <div class="sec-sub">AI予測付き工程別不良分析・月次トレンド</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <select style="background:var(--surface);border:1px solid var(--border);padding:7px 12px;border-radius:8px;font-size:13px;color:var(--text);cursor:pointer">
+        <option>2026年5月（今月）</option>
+        <option>2026年4月</option>
+        <option>2026年Q1</option>
+      </select>
+      <button class="btn btn-primary">📥 PDF出力</button>
+    </div>
+  </div>
+
+  <div class="report-kpi-grid">
+    <div class="rkpi">
+      <div class="rkpi-lbl">月間検査数</div>
+      <div class="rkpi-val" style="color:var(--blue)">28,412</div>
+      <div class="rkpi-trend"><span class="up">↑ 4.2%</span> 前月比</div>
+    </div>
+    <div class="rkpi">
+      <div class="rkpi-lbl">月間合格率</div>
+      <div class="rkpi-val" style="color:var(--green)">97.3%</div>
+      <div class="rkpi-trend"><span class="up">↑ 0.6%</span> 前月比</div>
+    </div>
+    <div class="rkpi">
+      <div class="rkpi-lbl">月間不良検出数</div>
+      <div class="rkpi-val" style="color:var(--red)">763</div>
+      <div class="rkpi-trend"><span class="up">↓ 48件</span> 前月比</div>
+    </div>
+    <div class="rkpi">
+      <div class="rkpi-lbl">AI検査カバー率</div>
+      <div class="rkpi-val" style="color:var(--purple)">99.8%</div>
+      <div class="rkpi-trend">全品AI検査体制</div>
+    </div>
+  </div>
+
+  <div class="chart-grid2">
+    <div class="card">
+      <div class="chart-hdr">
+        <div class="chart-title">工程別不良率（今月）</div>
+        <span class="badge badge-ai">AI解析</span>
+      </div>
+      <canvas id="procChart" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="chart-hdr">
+        <div class="chart-title">月次不良率トレンド（12ヶ月）</div>
+      </div>
+      <canvas id="monthChart" height="210"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="chart-hdr">
+      <div class="chart-title">不良モード パレート分析</div>
+      <span style="font-size:12px;color:var(--text-3)">上位5モードで全不良の89.2%を占める</span>
+    </div>
+    <canvas id="paretoChart" height="160"></canvas>
+  </div>
+
+  <div class="ai-pred-grid">
+    <div class="pred-card">
+      <div class="pred-icon">📈</div>
+      <div class="pred-val" style="color:var(--amber)">2.9%</div>
+      <div class="pred-label">来月の不良率予測（6月）</div>
+      <div class="pred-desc">6月の気温上昇により金型冷却効率が低下。気泡不良が増加傾向になると予測。金型温度管理の強化を推奨。</div>
+    </div>
+    <div class="pred-card">
+      <div class="pred-icon">⚠️</div>
+      <div class="pred-val" style="color:var(--red)">金型#3</div>
+      <div class="pred-label">要注意設備 — 予防保全推奨</div>
+      <div class="pred-desc">ダイカストマシン#3の型締め力が基準値の92%に低下。次回メンテナンスまでに気泡不良が増加するリスクが高い。</div>
+    </div>
+    <div class="pred-card">
+      <div class="pred-icon">💡</div>
+      <div class="pred-val" style="color:var(--green)">+0.8%</div>
+      <div class="pred-label">改善施策による合格率向上余地</div>
+      <div class="pred-desc">金型温度プロファイルの最適化とAIモデルの追加学習により、来月の合格率を98.1%まで引き上げ可能とAIが推定。</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ════ JAVASCRIPT ═════════════════════════════════════════ -->
+<script>
+// ── Navigation ────────────────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  if (id === 'report' && !reportInit) initReportCharts();
+}
+
+// ── Chart defaults ────────────────────────────────────────
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#e2e8f0';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+
+const TT = {
+  backgroundColor:'#0f172a', borderColor:'#334155', borderWidth:1,
+  padding:12, cornerRadius:8, titleColor:'#f1f5f9', bodyColor:'#94a3b8',
+};
+
+// ── KPI counter ───────────────────────────────────────────
+function countUp(el, to, suffix, ms) {
+  const start = performance.now();
+  (function tick(now) {
+    const p = Math.min((now-start)/ms, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    el.textContent = (Number.isInteger(to) ? Math.round(to*ease) : (to*ease).toFixed(1)) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+// ── Dashboard init ────────────────────────────────────────
+function initDash() {
+  setTimeout(() => {
+    countUp(document.getElementById('k1'), 1284, '件', 1100);
+    countUp(document.getElementById('k2'), 97.3, '%', 1200);
+    countUp(document.getElementById('k3'), 35, '件', 900);
+    countUp(document.getElementById('k4'), 99.6, '%', 1050);
+  }, 300);
+
+  // Trend chart
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: ['4/28', '4/29', '4/30', '5/1', '5/2', '5/3', '5/4（本日）'],
+      datasets: [{
+        label: '不良率',
+        data: [2.1, 1.8, 2.3, 1.9, 2.7, 2.1, 2.7],
+        borderColor: '#dc2626', borderWidth: 2.5,
+        backgroundColor: 'rgba(220,38,38,.06)',
+        pointBackgroundColor: '#dc2626', pointRadius: 5,
+        tension: 0.4, fill: true,
+      },{
+        label: '管理限界',
+        data: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+        borderColor: 'rgba(217,119,6,.6)', borderWidth:1.5, borderDash:[5,4],
+        pointRadius:0, fill:false,
+      }]
+    },
+    options: {
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        tooltip:{...TT, callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
+        y:{grid:{color:'#f1f5f9'},min:0,max:4,ticks:{color:'#64748b',callback:v=>v+'%'}}
+      }
+    }
+  });
+
+  // Mode donut chart
+  new Chart(document.getElementById('modeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['気泡(Void)', 'クラック', '寸法不良', '表面傷', 'その他'],
+      datasets: [{
+        data: [35, 20, 18, 15, 12],
+        backgroundColor: ['#dc2626','#d97706','#2563eb','#7c3aed','#94a3b8'],
+        borderWidth: 2, borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive:true, cutout:'62%',
+      plugins:{
+        legend:{position:'right',labels:{color:'#64748b',usePointStyle:true,padding:16,font:{size:11}}},
+        tooltip:{...TT, callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}}
+      }
+    }
+  });
+}
+
+// ── PRODUCT DATA ──────────────────────────────────────────
+const PRODUCTS = {
+  A: {
+    name: 'ADC-X200', lot: 'L2605-089', mat: 'ADC12アルミ合金',
+    draw: drawDieCast,
+    defects: [
+      { l:36.5, t:33.5, w:9.5, h:16, type:'fail', label:'気泡 (Void)', sub:'直径 2.3mm / 深度 1.8mm', conf:98.2, sev:'重大' },
+      { l:57, t:26, w:10, h:12.5, type:'warn', label:'クラック', sub:'長さ 4.1mm', conf:87.5, sev:'要注意' },
+    ],
+    verdict:'fail', score:31.8,
+  },
+  B: {
+    name: 'PCB-Z400', lot: 'L2605-095', mat: 'FR-4ガラスエポキシ',
+    draw: drawPCB,
+    defects: [
+      { l:48, t:51, w:10, h:10.5, type:'fail', label:'はんだブリッジ', sub:'ICピン間 ショート', conf:99.1, sev:'重大' },
+    ],
+    verdict:'fail', score:18.9,
+  },
+  C: {
+    name: 'INJ-S100', lot: 'L2605-102', mat: 'POM（ジュラコン）',
+    draw: drawPlastic,
+    defects: [],
+    verdict:'pass', score:98.7,
+  },
+};
+
+let currentProduct = 'A';
+let inspecting = false;
+let inspDone = false;
+
+function selectProduct(key, el) {
+  if (inspecting) return;
+  document.querySelectorAll('.prod-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentProduct = key;
+  resetInspection();
+  const p = PRODUCTS[key];
+  document.getElementById('r-name').textContent = p.name;
+  document.getElementById('r-lot').textContent = p.lot;
+  document.getElementById('r-mat').textContent = p.mat;
+}
+
+// ── Canvas Draw Functions ─────────────────────────────────
+function drawDieCast(ctx) {
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  // Background — inspection table
+  ctx.fillStyle = '#e2e6ed'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,0,0,.06)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Part body
+  const pg=ctx.createLinearGradient(95,45,545,315);
+  pg.addColorStop(0,'#d0d4de'); pg.addColorStop(0.35,'#e4e8f0'); pg.addColorStop(1,'#aab0bc');
+  ctx.fillStyle=pg;
+  ctx.beginPath(); ctx.roundRect(95,45,450,270,12); ctx.fill();
+
+  // Sheen
+  const sh=ctx.createLinearGradient(95,45,95,155);
+  sh.addColorStop(0,'rgba(255,255,255,.55)'); sh.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sh;
+  ctx.beginPath(); ctx.roundRect(95,45,450,110,[12,12,0,0]); ctx.fill();
+
+  // Shadow edge
+  const sd=ctx.createLinearGradient(95,285,95,315);
+  sd.addColorStop(0,'rgba(0,0,0,0)'); sd.addColorStop(1,'rgba(0,0,0,.15)');
+  ctx.fillStyle=sd;
+  ctx.beginPath(); ctx.roundRect(95,285,450,30,[0,0,12,12]); ctx.fill();
+
+  // Bolt holes
+  [[137,90],[503,90],[137,270],[503,270]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fillStyle='#9198a8'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2);
+    const hg=ctx.createRadialGradient(x-3,y-3,1,x,y,13);
+    hg.addColorStop(0,'#4b5368'); hg.addColorStop(1,'#2d3347');
+    ctx.fillStyle=hg; ctx.fill();
+    ctx.beginPath(); ctx.arc(x-3,y-4,4,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.45)'; ctx.fill();
+  });
+
+  // Machining marks
+  ctx.strokeStyle='rgba(0,0,0,.1)'; ctx.lineWidth=0.7;
+  for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(195,88+i*18);ctx.lineTo(445,88+i*18);ctx.stroke();}
+
+  // Center boss
+  const bg=ctx.createRadialGradient(318,178,8,320,180,58);
+  bg.addColorStop(0,'#d8dce6'); bg.addColorStop(1,'#a0a8b8');
+  ctx.beginPath(); ctx.arc(320,180,58,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
+  ctx.beginPath(); ctx.arc(320,180,36,0,Math.PI*2); ctx.fillStyle='#8892a4'; ctx.fill();
+  const cg=ctx.createRadialGradient(316,176,2,320,180,20);
+  cg.addColorStop(0,'#555f72'); cg.addColorStop(1,'#2d3448');
+  ctx.beginPath(); ctx.arc(320,180,20,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+  ctx.beginPath(); ctx.arc(315,175,5,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
+
+  // Defect 1: Void (subtle dark spot near boss)
+  ctx.beginPath(); ctx.ellipse(244,149,9,7,0.3,0,Math.PI*2);
+  ctx.fillStyle='rgba(25,30,45,.8)'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(241,147,4,3,0.3,0,Math.PI*2);
+  ctx.fillStyle='rgba(10,14,25,.9)'; ctx.fill();
+  // Void highlight ring
+  ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(244,149,10,8,0.3,0,Math.PI*2); ctx.stroke();
+
+  // Defect 2: Crack
+  ctx.strokeStyle='rgba(20,25,40,.75)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(373,113); ctx.lineTo(389,127); ctx.lineTo(384,141); ctx.stroke();
+  ctx.lineWidth=0.7; ctx.strokeStyle='rgba(20,25,40,.4)';
+  ctx.beginPath(); ctx.moveTo(389,127); ctx.lineTo(396,131); ctx.stroke();
+
+  // Markings
+  ctx.fillStyle='rgba(45,55,80,.5)'; ctx.font='bold 10px IBM Plex Mono';
+  ctx.fillText('ADC-X200  LOT: L2605-089', 180,300);
+  ctx.fillText('2026-05-02', 180,314);
+}
+
+function drawPCB(ctx) {
+  const W=ctx.canvas.width, H=ctx.canvas.height;
+  // PCB body
+  ctx.fillStyle='#1a3a24'; ctx.fillRect(70,35,500,290);
+  ctx.fillStyle='#1f4a2c'; ctx.fillRect(70,35,500,290);
+
+  // Copper traces
+  ctx.strokeStyle='rgba(184,134,11,.75)'; ctx.lineWidth=2.5;
+  const traces=[[110,280,110,110],[570,280,570,110],[110,180,570,180],[110,110,570,110],[110,280,570,280]];
+  traces.forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
+  [170,230,290,350,410,470,520].forEach(x=>{
+    ctx.beginPath();ctx.moveTo(x,70);ctx.lineTo(x,310);ctx.stroke();
+  });
+
+  // Pads
+  [[170,110],[230,110],[290,110],[350,110],[410,110],[470,110],
+   [170,180],[230,180],[290,180],[350,180],[410,180],[470,180],
+   [170,280],[230,280],[290,280],[350,280],[410,280],[470,280]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fillStyle='#c8a020'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle='#b89018'; ctx.fill();
+  });
+
+  // ICs — black rectangles with pins
+  [[145,75,120,70,'U1 — MCU'],[305,75,120,70,'U2 — PWR'],[145,215,120,70,'U3 — MEM']].forEach(([x,y,w,h,lbl])=>{
+    ctx.fillStyle='#111827'; ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+    // IC surface marking
+    ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(x+4,y+4,w-8,h-8);
+    ctx.fillStyle='rgba(255,255,255,.4)'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(lbl,x+w/2,y+h/2+3); ctx.textAlign='left';
+    // Pins
+    for(let i=0;i<4;i++){
+      ctx.fillStyle='#c8a020';
+      ctx.fillRect(x-6,y+9+i*14,6,8);
+      ctx.fillRect(x+w,y+9+i*14,6,8);
+    }
+  });
+
+  // Capacitors
+  [[480,100],[480,165],[480,225]].forEach(([x,y])=>{
+    ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fillStyle='#1d3a6e'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.fillStyle='#1e4080'; ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('10μ',x,y+2); ctx.textAlign='left';
+  });
+
+  // Resistors
+  [[540,130],[540,180],[540,230]].forEach(([x,y])=>{
+    ctx.fillStyle='#8b6914'; ctx.fillRect(x-14,y-5,28,10);
+    ctx.strokeStyle='#c8a020'; ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x-20,y);ctx.lineTo(x-14,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x+14,y);ctx.lineTo(x+20,y);ctx.stroke();
+  });
+
+  // DEFECT: Solder bridge (excess solder between pins)
+  ctx.fillStyle='rgba(218,165,32,.92)';
+  ctx.beginPath(); ctx.ellipse(356,183,14,6,0.15,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(200,150,20,.95)';
+  ctx.beginPath(); ctx.arc(352,180,5,0,Math.PI*2); ctx.fill();
+  // Extra blob
+  ctx.fillStyle='rgba(220,170,30,.8)';
+  ctx.beginPath(); ctx.ellipse(362,185,6,4,0.3,0,Math.PI*2); ctx.fill();
+
+  // PCB border
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.strokeRect(70,35,500,290);
+
+  // Markings
+  ctx.fillStyle='rgba(200,220,200,.35)'; ctx.font='bold 9px IBM Plex Mono';
+  ctx.fillText('PCB-Z400  Rev.3.1  LOT: L2605-095', 155,335);
+}
+
+function drawPlastic(ctx) {
+  const W=ctx.canvas.width, H=ctx.canvas.height;
+  ctx.fillStyle='#dde0e6'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,0,0,.05)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Main body (off-white plastic)
+  const pg=ctx.createLinearGradient(110,50,530,310);
+  pg.addColorStop(0,'#f5f0ea'); pg.addColorStop(0.5,'#ede5d8'); pg.addColorStop(1,'#ddd3c5');
+  ctx.fillStyle=pg; ctx.beginPath(); ctx.roundRect(110,50,420,260,10); ctx.fill();
+
+  // Sheen
+  const sh=ctx.createLinearGradient(110,50,110,130);
+  sh.addColorStop(0,'rgba(255,255,255,.7)'); sh.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sh; ctx.beginPath(); ctx.roundRect(110,50,420,80,[10,10,0,0]); ctx.fill();
+
+  // Ribs
+  ctx.strokeStyle='rgba(0,0,0,.09)'; ctx.lineWidth=1.5;
+  [190,270,350,430].forEach(x=>{ctx.beginPath();ctx.moveTo(x,60);ctx.lineTo(x,300);ctx.stroke();});
+  [120,170,220,270].forEach(dy=>{ctx.beginPath();ctx.moveTo(120,60+dy);ctx.lineTo(520,60+dy);ctx.stroke();});
+
+  // Boss features (6 mounting bosses)
+  [[170,115],[320,115],[470,115],[170,245],[320,245],[470,245]].forEach(([x,y])=>{
+    const bg=ctx.createRadialGradient(x-3,y-3,3,x,y,22);
+    bg.addColorStop(0,'#d9d1c4'); bg.addColorStop(1,'#c4bbb0');
+    ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fillStyle='#b8b0a4'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
+    const cg=ctx.createRadialGradient(x-2,y-2,1,x,y,6);
+    cg.addColorStop(0,'#7a7268'); cg.addColorStop(1,'#5c5650');
+    ctx.fillStyle=cg; ctx.fill();
+    ctx.beginPath(); ctx.arc(x-1,y-2,2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.4)'; ctx.fill();
+  });
+
+  // Gate mark
+  ctx.beginPath(); ctx.arc(320,180,8,0,Math.PI*2);
+  ctx.fillStyle='#c0b8aa'; ctx.fill();
+  ctx.beginPath(); ctx.arc(320,180,4,0,Math.PI*2);
+  ctx.fillStyle='#a09890'; ctx.fill();
+
+  // Label
+  ctx.fillStyle='rgba(80,70,60,.45)'; ctx.font='bold 9px IBM Plex Mono';
+  ctx.fillText('INJ-S100  LOT: L2605-102  POM', 185,298);
+  ctx.fillText('2026-05-04  ↑ GATE', 240,312);
+}
+
+function drawProduct() {
+  const canvas = document.getElementById('inspCanvas');
+  const ctx = canvas.getContext('2d');
+  PRODUCTS[currentProduct].draw(ctx);
+}
+
+// ── Inspection Animation ──────────────────────────────────
+function resetInspection() {
+  inspDone = false;
+  const overlay = document.getElementById('detectOverlay');
+  overlay.innerHTML = '';
+  document.getElementById('verdictOverlay').classList.remove('show');
+  document.getElementById('scanLine').classList.remove('scanning');
+  document.getElementById('scanLine').style.top = '-4px';
+  document.getElementById('detect-items').innerHTML =
+    '<div style="font-size:12px;color:var(--text-3);text-align:center;padding:24px 0">検査を実行すると結果が表示されます</div>';
+  document.getElementById('detect-count').textContent = '（検査前）';
+  document.getElementById('score-num').textContent = '—';
+  document.getElementById('score-num').className = 'score-num score-fail';
+  document.getElementById('score-bar').style.width = '0%';
+  document.getElementById('score-bar').style.background = 'var(--red)';
+  document.getElementById('insp-status').textContent = '待機中 — 製品をセットして検査を開始してください';
+  document.getElementById('insp-btn').disabled = false;
+  const p = PRODUCTS[currentProduct];
+  document.getElementById('r-name').textContent = p.name;
+  document.getElementById('r-lot').textContent = p.lot;
+  document.getElementById('r-mat').textContent = p.mat;
+  drawProduct();
+}
+
+function runInspection() {
+  if (inspecting) return;
+  inspecting = true;
+  const btn = document.getElementById('insp-btn');
+  const loading = document.getElementById('insp-loading');
+  btn.disabled = true;
+  loading.classList.add('show');
+  document.getElementById('insp-status').textContent = 'AIモデル推論中 — 画像取得・前処理...';
+
+  // Reset overlay
+  document.getElementById('detectOverlay').innerHTML = '';
+  document.getElementById('verdictOverlay').classList.remove('show');
+
+  const canvas = document.getElementById('inspCanvas');
+  const totalH = canvas.height;
+  const wrap = document.getElementById('canvasWrap');
+  const displayH = wrap.offsetHeight;
+  const scale = displayH / totalH;
+
+  const scanLine = document.getElementById('scanLine');
+  scanLine.style.top = '-4px';
+  scanLine.classList.add('scanning');
+
+  let y = 0;
+  let frameCount = 0;
+  const totalFrames = 60; // ~2 seconds at 30fps
+
+  function scanStep() {
+    y = (frameCount / totalFrames) * displayH;
+    scanLine.style.top = y + 'px';
+    frameCount++;
+
+    if (frameCount <= 20) {
+      document.getElementById('insp-status').textContent = `スキャン中... ${Math.round(frameCount/totalFrames*100)}% — エッジ検出処理`;
+    } else if (frameCount <= 40) {
+      document.getElementById('insp-status').textContent = `スキャン中... ${Math.round(frameCount/totalFrames*100)}% — CNNフィルタ適用中`;
+    } else {
+      document.getElementById('insp-status').textContent = `スキャン中... ${Math.round(frameCount/totalFrames*100)}% — 欠陥分類・スコアリング`;
+    }
+
+    if (frameCount < totalFrames) {
+      setTimeout(scanStep, 33);
+    } else {
+      // Scan done
+      scanLine.classList.remove('scanning');
+      loading.classList.remove('show');
+      showDetections(scale);
+    }
+  }
+  scanStep();
+}
+
+function showDetections(scale) {
+  const p = PRODUCTS[currentProduct];
+  const canvas = document.getElementById('inspCanvas');
+  const wrap = document.getElementById('canvasWrap');
+  const displayW = wrap.offsetWidth;
+  const displayH = wrap.offsetHeight;
+
+  const overlay = document.getElementById('detectOverlay');
+  overlay.innerHTML = '';
+
+  // Show detection boxes one by one
+  p.defects.forEach((d, i) => {
+    setTimeout(() => {
+      const box = document.createElement('div');
+      box.className = `dbox ${d.type}`;
+      box.style.left   = d.l + '%';
+      box.style.top    = d.t + '%';
+      box.style.width  = d.w + '%';
+      box.style.height = d.h + '%';
+      box.innerHTML = `
+        <div class="dbox-inner"></div>
+        <div class="dc tl"></div><div class="dc tr"></div>
+        <div class="dc bl"></div><div class="dc br"></div>
+        <div class="dbox-label">${d.label}</div>
+        <div class="conf-tag">${d.conf}%</div>
+      `;
+      overlay.appendChild(box);
+      setTimeout(() => box.classList.add('show'), 20);
+    }, i * 400);
+  });
+
+  // After all boxes shown, display verdict
+  setTimeout(() => {
+    showVerdict(p);
+  }, p.defects.length * 400 + 600);
+}
+
+function showVerdict(p) {
+  // Update detect list
+  const container = document.getElementById('detect-items');
+  container.innerHTML = '';
+  document.getElementById('detect-count').textContent =
+    `（${p.defects.length}件検出）`;
+
+  if (p.defects.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-weight:700;font-size:14px">✅ 欠陥は検出されませんでした</div>';
+  } else {
+    p.defects.forEach(d => {
+      const sevClass = d.type === 'fail' ? 'sev-critical' : 'sev-warn';
+      const barColor = d.type === 'fail' ? 'var(--red)' : 'var(--amber)';
+      container.innerHTML += `
+        <div class="detect-item">
+          <div>
+            <span class="sev-badge ${sevClass}">${d.sev}</span>
+          </div>
+          <div style="flex:1">
+            <div class="detect-name">${d.label}</div>
+            <div class="detect-sub">${d.sub}</div>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:0%;background:${barColor}" data-conf="${d.conf}"></div></div>
+              <span class="conf-num" style="color:${barColor}">${d.conf}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.conf-bar-fill').forEach(el => {
+        el.style.width = el.dataset.conf + '%';
+      });
+    }, 50);
+  }
+
+  // Score
+  const scoreEl = document.getElementById('score-num');
+  const barEl = document.getElementById('score-bar');
+  const isPass = p.verdict === 'pass';
+  scoreEl.className = 'score-num ' + (isPass ? 'score-pass' : 'score-fail');
+  const targetScore = p.score;
+  let cur = 0;
+  const step = () => {
+    cur = Math.min(cur + targetScore/40, targetScore);
+    scoreEl.textContent = cur.toFixed(1);
+    if (cur < targetScore) setTimeout(step, 25);
+  };
+  step();
+  barEl.style.width = targetScore + '%';
+  barEl.style.background = isPass ? 'var(--green)' : 'var(--red)';
+
+  // Verdict overlay
+  const vo = document.getElementById('verdictOverlay');
+  const vb = document.getElementById('verdictBadge');
+  const vl = document.getElementById('verdictLabel');
+  const vs = document.getElementById('verdictSub');
+  vb.className = 'verdict-badge ' + p.verdict;
+  vl.textContent = isPass ? '合  格' : '不合格';
+  vs.textContent = isPass ? '品質基準を満たしています' : `重大不良 ${p.defects.filter(d=>d.type==='fail').length}件 — 出荷停止`;
+  vo.classList.add('show');
+
+  document.getElementById('insp-status').textContent =
+    isPass ? '✅ 合格 — 品質基準を満たしています' : `❌ 不合格 — 重大不良を検出 / スコア ${p.score}点`;
+
+  inspecting = false;
+  inspDone = true;
+}
+
+// ── Report Charts ─────────────────────────────────────────
+let reportInit = false;
+function initReportCharts() {
+  reportInit = true;
+
+  // Process defect rate
+  new Chart(document.getElementById('procChart'), {
+    type: 'bar',
+    data: {
+      labels: ['素材受入', 'ダイカスト成形', '機械加工', '表面処理', '最終検査'],
+      datasets: [{
+        label: '不良率',
+        data: [1.2, 2.8, 1.8, 3.2, 0.8],
+        backgroundColor: ['rgba(37,99,235,.65)','rgba(220,38,38,.7)','rgba(37,99,235,.55)','rgba(220,38,38,.85)','rgba(5,150,105,.65)'],
+        borderColor: ['#2563eb','#dc2626','#2563eb','#dc2626','#059669'],
+        borderWidth: 1, borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT, callbacks:{label:c=>` 不良率: ${c.parsed.y}%`}}
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
+        y:{grid:{color:'#f1f5f9'},min:0,max:5,ticks:{color:'#64748b',callback:v=>v+'%'}}
+      }
+    }
+  });
+
+  // Monthly trend
+  new Chart(document.getElementById('monthChart'), {
+    type: 'line',
+    data: {
+      labels: ['6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月'],
+      datasets: [
+        {
+          label: '不良率',
+          data: [3.2,3.8,3.1,2.9,3.4,2.7,2.5,2.8,2.6,2.4,2.7,2.7],
+          borderColor:'#dc2626', borderWidth:2.5,
+          backgroundColor:'rgba(220,38,38,.05)',
+          pointBackgroundColor:'#dc2626', pointRadius:4, tension:0.4, fill:true,
+        },
+        {
+          label: '目標値',
+          data: [3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0],
+          borderColor:'rgba(217,119,6,.65)', borderWidth:1.5, borderDash:[5,4],
+          pointRadius:0, fill:false,
+        }
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        tooltip:{...TT, callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
+        y:{grid:{color:'#f1f5f9'},min:0,max:5,ticks:{color:'#64748b',callback:v=>v+'%'}}
+      }
+    }
+  });
+
+  // Pareto
+  new Chart(document.getElementById('paretoChart'), {
+    type: 'bar',
+    data: {
+      labels: ['気泡(Void)', 'クラック', '寸法不良', '表面傷', 'その他'],
+      datasets: [
+        {
+          label: '件数',
+          data: [267, 153, 137, 115, 91],
+          backgroundColor: ['rgba(220,38,38,.75)','rgba(217,119,6,.7)','rgba(37,99,235,.6)','rgba(124,58,237,.6)','rgba(148,163,184,.5)'],
+          borderWidth:0, borderRadius:4, yAxisID:'y',
+        },
+        {
+          label: '累積比率',
+          data: [35.0, 55.1, 73.1, 88.2, 100.0],
+          type: 'line',
+          borderColor:'#059669', borderWidth:2.5,
+          pointBackgroundColor:'#059669', pointRadius:5, tension:0.2,
+          yAxisID:'y2', fill:false,
+        }
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{
+        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        tooltip:{...TT}
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
+        y:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
+        y2:{position:'right',min:0,max:110,grid:{display:false},ticks:{color:'#059669',callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initDash();
+  drawProduct();
+});
+</script>
+</body>
+</html>
