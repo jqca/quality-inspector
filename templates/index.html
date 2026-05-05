@@ -7,7 +7,35 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
+    /* ── DARK THEME (default) ────────────────────────────── */
     :root {
+      --bg:       #0c1220;
+      --bg-alt:   #111827;
+      --surface:  rgba(255,255,255,.05);
+      --sf2:      rgba(255,255,255,.03);
+      --border:   rgba(255,255,255,.09);
+      --border-b: rgba(255,255,255,.15);
+      --text:     #e2e8f0;
+      --text-2:   #94a3b8;
+      --text-3:   #64748b;
+      --navy:     #060d1a;
+      --blue:     #3b82f6;
+      --blue-lt:  rgba(59,130,246,.18);
+      --green:    #10b981;
+      --green-lt: rgba(16,185,129,.18);
+      --amber:    #f59e0b;
+      --amber-lt: rgba(245,158,11,.18);
+      --red:      #ef4444;
+      --red-lt:   rgba(239,68,68,.18);
+      --purple:   #a78bfa;
+      --ch-grid:  rgba(255,255,255,.06);
+      --ch-tick:  #64748b;
+      --sk-base:  rgba(255,255,255,.06);
+      --sk-shine: rgba(255,255,255,.12);
+    }
+
+    /* ── LIGHT THEME ─────────────────────────────────────── */
+    [data-theme="light"] {
       --bg:       #f0f4f8;
       --bg-alt:   #e8edf3;
       --surface:  #ffffff;
@@ -27,6 +55,10 @@
       --red:      #dc2626;
       --red-lt:   #fee2e2;
       --purple:   #7c3aed;
+      --ch-grid:  #f1f5f9;
+      --ch-tick:  #64748b;
+      --sk-base:  #e2e8f0;
+      --sk-shine: #f8fafc;
     }
 
     *{margin:0;padding:0;box-sizing:border-box;}
@@ -36,70 +68,138 @@
       color:var(--text);
       font-family:'Inter',-apple-system,sans-serif;
       font-size:14px; line-height:1.5; min-height:100vh;
+      transition:background .25s,color .25s;
     }
 
     /* ── HEADER ──────────────────────────────────────────── */
     .header {
       background:var(--navy);
-      box-shadow:0 2px 12px rgba(0,0,0,.28);
+      box-shadow:0 2px 12px rgba(0,0,0,.4);
       position:fixed;top:0;left:0;right:0;z-index:100;
-      height:60px; display:flex; align-items:center; padding:0 24px; gap:20px;
+      height:60px; display:flex; align-items:center; padding:0 20px; gap:16px;
     }
     .logo {
       display:flex;align-items:center;gap:10px;
       font-weight:700;font-size:15px;color:#fff;
-      white-space:nowrap;text-decoration:none;
+      white-space:nowrap;text-decoration:none;flex-shrink:0;
     }
     .logo-icon {
       width:34px;height:34px;
       background:linear-gradient(135deg,#dc2626,#f59e0b);
-      border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
     }
     .logo-sub {
       font-size:9px;color:rgba(255,255,255,.42);
       font-family:'IBM Plex Mono',monospace;letter-spacing:.12em;margin-top:1px;
     }
-    .nav-tabs{display:flex;gap:3px;flex:1;}
+    .nav-tabs{display:flex;gap:3px;flex:1;overflow:hidden;}
     .nav-tab {
-      padding:7px 15px;border-radius:7px;cursor:pointer;
+      padding:7px 13px;border-radius:7px;cursor:pointer;
       font-size:13px;font-weight:500;color:rgba(255,255,255,.52);
       transition:all .18s;border:1px solid transparent;white-space:nowrap;
+      display:flex;align-items:center;gap:6px;
     }
     .nav-tab:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.07);}
     .nav-tab.active{color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.16);}
-    .header-right{display:flex;align-items:center;gap:14px;margin-left:auto;}
+    .nav-tab svg{flex-shrink:0;opacity:.7;}
+    .nav-tab.active svg{opacity:1;}
+    .header-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0;}
     .ai-status{display:flex;align-items:center;gap:6px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:#34d399;}
     .ai-dot{width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s infinite;}
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
     .user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;}
 
+    /* ── DARK MODE TOGGLE ────────────────────────────────── */
+    .theme-btn {
+      width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      color:rgba(255,255,255,.7);transition:all .18s;flex-shrink:0;
+    }
+    .theme-btn:hover{background:rgba(255,255,255,.14);color:#fff;}
+
+    /* ── HAMBURGER ───────────────────────────────────────── */
+    .hamburger {
+      display:none;width:36px;height:36px;border-radius:8px;
+      border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
+      cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+      flex-shrink:0;
+    }
+    .hamburger span{width:18px;height:2px;background:rgba(255,255,255,.7);border-radius:2px;transition:all .2s;}
+    .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+    .hamburger.open span:nth-child(2){opacity:0;}
+    .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+    /* Mobile nav drawer */
+    .nav-drawer {
+      display:none;position:fixed;top:60px;left:0;right:0;
+      background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1);
+      z-index:99;padding:12px 16px;flex-direction:column;gap:4px;
+      box-shadow:0 8px 32px rgba(0,0,0,.4);
+    }
+    .nav-drawer.open{display:flex;}
+    .nav-drawer .nav-tab{justify-content:flex-start;}
+
     /* ── LAYOUT ──────────────────────────────────────────── */
     .main{padding-top:60px;min-height:100vh;}
     .page{display:none;padding:28px 28px 56px;max-width:1440px;margin:0 auto;}
-    .page.active{display:block;animation:fadeIn .25s ease;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+    .page.active{display:block;animation:fadeIn .22s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
     /* ── COMMON ──────────────────────────────────────────── */
-    .sec-title{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.02em;}
+    .sec-title{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
     .sec-sub{font-size:12px;color:var(--text-3);margin-top:3px;}
     .sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.15);}
     .chart-title{font-size:14px;font-weight:700;color:var(--text);}
     .chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+
+    /* ── HERO CARD ───────────────────────────────────────── */
+    .hero-card {
+      background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(245,158,11,.08));
+      border:1px solid rgba(239,68,68,.25);
+      border-radius:16px;padding:24px 28px;margin-bottom:22px;
+      display:flex;align-items:center;gap:28px;
+      position:relative;overflow:hidden;
+    }
+    .hero-card::before {
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(239,68,68,.06) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    .hero-rate-wrap{text-align:center;flex-shrink:0;}
+    .hero-rate-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;}
+    .hero-rate {
+      font-size:64px;font-weight:900;font-family:'IBM Plex Mono',monospace;
+      line-height:1;color:var(--green);letter-spacing:-.03em;
+    }
+    .hero-rate-sub{font-size:11px;color:var(--text-3);margin-top:4px;}
+    .hero-divider{width:1px;background:var(--border);align-self:stretch;flex-shrink:0;}
+    .hero-stats{display:flex;gap:28px;flex:1;flex-wrap:wrap;}
+    .hero-stat{text-align:center;}
+    .hero-stat-val{font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1;}
+    .hero-stat-lbl{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;}
+    .hero-badge {
+      margin-left:auto;flex-shrink:0;
+      background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);
+      border-radius:10px;padding:10px 16px;text-align:center;
+    }
+    .hero-badge-val{font-size:13px;font-weight:700;color:var(--green);}
+    .hero-badge-lbl{font-size:10px;color:var(--text-3);margin-top:2px;}
 
     /* ── KPI CARDS ───────────────────────────────────────── */
     .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
     .kpi-card{
       background:var(--surface);border:1px solid var(--border);border-radius:12px;
       padding:20px 20px 16px;position:relative;overflow:hidden;
-      box-shadow:0 1px 3px rgba(0,0,0,.05);transition:box-shadow .2s,transform .2s;
+      box-shadow:0 1px 3px rgba(0,0,0,.15);transition:box-shadow .2s,transform .2s;
     }
-    .kpi-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.1);transform:translateY(-2px);}
+    .kpi-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.25);transform:translateY(-2px);}
     .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-    .kpi-card.blue::before{background:linear-gradient(90deg,#2563eb,#60a5fa);}
-    .kpi-card.green::before{background:linear-gradient(90deg,#059669,#34d399);}
-    .kpi-card.red::before{background:linear-gradient(90deg,#dc2626,#f87171);}
-    .kpi-card.amber::before{background:linear-gradient(90deg,#d97706,#fbbf24);}
+    .kpi-card.blue::before{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+    .kpi-card.green::before{background:linear-gradient(90deg,#10b981,#34d399);}
+    .kpi-card.red::before{background:linear-gradient(90deg,#ef4444,#f87171);}
+    .kpi-card.amber::before{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
     .kpi-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:14px;}
     .kpi-val{font-size:34px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:8px;}
     .kpi-card.blue .kpi-val{color:var(--blue);}
@@ -108,7 +208,24 @@
     .kpi-card.amber .kpi-val{color:var(--amber);}
     .kpi-trend{font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px;}
     .up{color:var(--green);font-weight:600;} .down{color:var(--red);font-weight:600;}
-    .kpi-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:40px;opacity:.07;pointer-events:none;}
+    .kpi-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:40px;opacity:.13;pointer-events:none;}
+
+    /* ── SKELETON LOADING ────────────────────────────────── */
+    @keyframes shimmer {
+      0%{background-position:-200% 0;}
+      100%{background-position:200% 0;}
+    }
+    .kpi-sk {
+      display:none;border-radius:6px;
+      background:linear-gradient(90deg,var(--sk-base) 25%,var(--sk-shine) 50%,var(--sk-base) 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.4s infinite;
+    }
+    .kpi-card.loading .kpi-val{display:none;}
+    .kpi-card.loading .kpi-trend{display:none;}
+    .kpi-card.loading .kpi-sk{display:block;}
+    .sk-val{height:34px;width:80%;margin-bottom:10px;}
+    .sk-trend{height:12px;width:55%;}
 
     /* ── ALERTS ──────────────────────────────────────────── */
     .alert-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
@@ -121,30 +238,36 @@
     .a-title{font-size:13px;font-weight:600;}
     .a-desc{font-size:12px;color:var(--text-2);margin-top:2px;line-height:1.6;}
     .a-time{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-3);white-space:nowrap;}
+    .see-all-link{
+      font-size:12px;font-weight:600;color:var(--blue);
+      text-decoration:none;white-space:nowrap;
+      transition:opacity .15s;
+    }
+    .see-all-link:hover{opacity:.75;}
 
     /* ── BUTTONS ─────────────────────────────────────────── */
     .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;font-family:'Inter',sans-serif;}
-    .btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(37,99,235,.3);}
-    .btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.4);}
+    .btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(59,130,246,.3);}
+    .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
     .btn-ghost{background:var(--surface);color:var(--text-2);border:1px solid var(--border);}
     .btn-ghost:hover{color:var(--text);border-color:var(--border-b);}
     .btn-ai{background:linear-gradient(135deg,#991b1b,#dc2626);color:#fff;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(220,38,38,.3);}
-    .btn-ai::after{content:'';position:absolute;top:-50%;left:-60%;width:60%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shimmer 2.5s infinite;}
-    @keyframes shimmer{0%{left:-60%;}100%{left:120%;}}
+    .btn-ai::after{content:'';position:absolute;top:-50%;left:-60%;width:60%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:btnShimmer 2.5s infinite;}
+    @keyframes btnShimmer{0%{left:-60%;}100%{left:120%;}}
     .btn-ai:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(220,38,38,.4);}
     .btn-ai:disabled{opacity:.6;cursor:not-allowed;transform:none;}
     .badge{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border-radius:5px;font-weight:700;}
-    .badge-live{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
-    .badge-ai{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
+    .badge-live{background:var(--green-lt);color:var(--green);border:1px solid rgba(16,185,129,.35);}
+    .badge-ai{background:var(--red-lt);color:var(--red);border:1px solid rgba(239,68,68,.35);}
 
     /* ── AI LOADING ──────────────────────────────────────── */
     .ai-loading{display:none;align-items:center;gap:8px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--red);}
     .ai-loading.show{display:flex;}
-    .ai-spin{width:15px;height:15px;border:2px solid rgba(220,38,38,.18);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;}
+    .ai-spin{width:15px;height:15px;border:2px solid rgba(239,68,68,.18);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
     /* ── CHART GRID ──────────────────────────────────────── */
-    .chart-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+    .chart-grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
 
     /* ── INSPECTION PAGE ─────────────────────────────────── */
     .prod-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
@@ -155,22 +278,22 @@
       transition:all .18s;font-family:'Inter',sans-serif;
     }
     .prod-tab:hover{color:var(--text);border-color:var(--border-b);}
-    .prod-tab.active{background:var(--red-lt);color:var(--red);border-color:#fca5a5;font-weight:700;}
+    .prod-tab.active{background:var(--red-lt);color:var(--red);border-color:rgba(239,68,68,.35);font-weight:700;}
 
     .inspect-layout{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:20px;}
     .inspect-canvas-wrap{
       position:relative;background:#d4d8df;
       border-radius:12px;overflow:hidden;
       border:1px solid var(--border);
-      box-shadow:0 1px 4px rgba(0,0,0,.08);
+      box-shadow:0 1px 4px rgba(0,0,0,.2);
     }
     #inspCanvas{display:block;width:100%;height:auto;}
 
-    /* Scan line */
+    /* Scan line — RED brand color */
     .scan-line{
       position:absolute;left:0;right:0;height:3px;
-      background:linear-gradient(90deg,transparent,rgba(37,99,235,.9),transparent);
-      box-shadow:0 0 12px 4px rgba(37,99,235,.5);
+      background:linear-gradient(90deg,transparent,rgba(239,68,68,.9),transparent);
+      box-shadow:0 0 12px 4px rgba(239,68,68,.5);
       top:-4px;display:none;pointer-events:none;
       transition:top .02s linear;
     }
@@ -191,9 +314,7 @@
     .dbox.fail .dc{border-color:#dc2626;}
     .dbox.warn .dc{border-color:#d97706;}
     .dbox.ok .dc{border-color:#059669;}
-    .dbox-inner{
-      position:absolute;inset:0;
-    }
+    .dbox-inner{position:absolute;inset:0;}
     .dbox.fail .dbox-inner{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);}
     .dbox.warn .dbox-inner{background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);}
     .dbox.ok .dbox-inner{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);}
@@ -215,7 +336,7 @@
     .verdict-overlay{
       position:absolute;inset:0;display:none;
       align-items:center;justify-content:center;
-      background:rgba(255,255,255,.12);backdrop-filter:blur(2px);
+      background:rgba(0,0,0,.18);backdrop-filter:blur(2px);
     }
     .verdict-overlay.show{display:flex;}
     .verdict-badge{
@@ -230,12 +351,12 @@
 
     /* Results panel */
     .results-panel{display:flex;flex-direction:column;gap:14px;}
-    .lot-info-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .lot-info-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
     .lot-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
     .lot-row:last-child{border-bottom:none;}
     .lot-key{color:var(--text-3);font-weight:600;}
     .lot-val{color:var(--text);font-weight:500;font-family:'IBM Plex Mono',monospace;font-size:11px;}
-    .detect-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);flex:1;}
+    .detect-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.1);flex:1;}
     .detect-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text);}
     .detect-item{
       display:flex;align-items:flex-start;gap:10px;
@@ -245,16 +366,16 @@
     .sev-badge{
       flex-shrink:0;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;
     }
-    .sev-critical{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
-    .sev-warn{background:var(--amber-lt);color:var(--amber);border:1px solid #fcd34d;}
-    .sev-ok{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
+    .sev-critical{background:var(--red-lt);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+    .sev-warn{background:var(--amber-lt);color:var(--amber);border:1px solid rgba(245,158,11,.3);}
+    .sev-ok{background:var(--green-lt);color:var(--green);border:1px solid rgba(16,185,129,.3);}
     .detect-name{font-size:13px;font-weight:600;color:var(--text);}
     .detect-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
     .conf-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:5px;}
     .conf-bar-bg{flex:1;height:4px;background:var(--bg-alt);border-radius:2px;overflow:hidden;}
     .conf-bar-fill{height:100%;border-radius:2px;transition:width 1s ease;}
     .conf-num{font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:600;flex-shrink:0;}
-    .score-display{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .score-display{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
     .score-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px;}
     .score-num{font-size:40px;font-weight:900;font-family:'IBM Plex Mono',monospace;line-height:1;}
     .score-pass{color:var(--green);}
@@ -268,25 +389,26 @@
       display:flex;gap:10px;align-items:center;margin-bottom:24px;
       background:var(--surface);border:1px solid var(--border);
       border-radius:10px;padding:12px 16px;
-      box-shadow:0 1px 3px rgba(0,0,0,.05);
+      box-shadow:0 1px 3px rgba(0,0,0,.1);
     }
     .search-ico{color:var(--text-3);font-size:16px;}
     .search-input{
       flex:1;border:none;outline:none;font-size:14px;
       font-family:'IBM Plex Mono',monospace;color:var(--text);background:transparent;
     }
+    .search-input::placeholder{color:var(--text-3);}
     .lot-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
     .lot-meta-card{
       background:var(--surface);border:1px solid var(--border);
       border-radius:10px;padding:16px;
-      box-shadow:0 1px 3px rgba(0,0,0,.05);
+      box-shadow:0 1px 3px rgba(0,0,0,.1);
     }
     .lm-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
     .lm-val{font-size:15px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;}
     .lm-sub{font-size:11px;color:var(--text-3);margin-top:2px;}
 
     /* Process timeline */
-    .timeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow-x:auto;}
+    .timeline-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.1);overflow-x:auto;}
     .timeline{display:flex;align-items:flex-start;gap:0;min-width:900px;}
     .t-node{flex:1;text-align:center;position:relative;}
     .t-node::after{
@@ -297,11 +419,11 @@
     .t-icon{
       width:48px;height:48px;border-radius:50%;border:2px solid;
       display:flex;align-items:center;justify-content:center;
-      font-size:20px;margin:0 auto 10px;position:relative;z-index:1;background:var(--surface);
+      font-size:20px;margin:0 auto 10px;position:relative;z-index:1;background:var(--bg-alt);
     }
     .t-icon.done{border-color:var(--green);background:var(--green-lt);}
     .t-icon.current{border-color:var(--blue);background:var(--blue-lt);animation:ring 1.5s infinite;}
-    @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.4);}50%{box-shadow:0 0 0 8px rgba(37,99,235,0);}}
+    @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4);}50%{box-shadow:0 0 0 8px rgba(59,130,246,0);}}
     .t-icon.warn{border-color:var(--red);background:var(--red-lt);}
     .t-title{font-size:12px;font-weight:700;color:var(--text);}
     .t-sub{font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.4;}
@@ -316,7 +438,7 @@
 
     /* Genealogy */
     .gene-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-    .gene-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .gene-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
     .gene-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
     .gene-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
     .gene-item:last-child{border-bottom:none;padding-bottom:0;}
@@ -330,21 +452,21 @@
     .sib-table th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);background:var(--sf2);border-bottom:1px solid var(--border);}
     .sib-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);}
     .sib-table tr:last-child td{border-bottom:none;}
-    .sib-table tr:hover td{background:#f8faff;}
+    .sib-table tr:hover td{background:var(--bg-alt);}
     .lot-code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-2);}
     .sbadge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
-    .sb-ok{background:var(--green-lt);color:var(--green);border:1px solid #6ee7b7;}
-    .sb-ng{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;}
-    .sb-wip{background:var(--blue-lt);color:var(--blue);border:1px solid #93c5fd;}
+    .sb-ok{background:var(--green-lt);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+    .sb-ng{background:var(--red-lt);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+    .sb-wip{background:var(--blue-lt);color:var(--blue);border:1px solid rgba(59,130,246,.3);}
 
     /* ── REPORT PAGE ─────────────────────────────────────── */
     .report-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
-    .rkpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .rkpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
     .rkpi-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
     .rkpi-val{font-size:26px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
     .rkpi-trend{font-size:11px;color:var(--text-3);margin-top:4px;}
     .ai-pred-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
-    .pred-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .pred-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
     .pred-icon{font-size:26px;margin-bottom:10px;}
     .pred-val{font-size:26px;font-weight:800;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;}
     .pred-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
@@ -355,15 +477,36 @@
     ::-webkit-scrollbar-track{background:var(--bg);}
     ::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:3px;}
 
+    /* ── SELECT ──────────────────────────────────────────── */
+    select{
+      background:var(--surface);border:1px solid var(--border);
+      color:var(--text);border-radius:8px;
+      padding:7px 12px;font-size:13px;cursor:pointer;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
     @media(max-width:1100px){
       .kpi-grid,.lot-meta-grid,.report-kpi-grid{grid-template-columns:repeat(2,1fr);}
       .inspect-layout{grid-template-columns:1fr;}
       .chart-grid2,.gene-grid{grid-template-columns:1fr;}
+      .hero-stats{gap:18px;}
+    }
+    @media(max-width:800px){
+      .nav-tabs{display:none;}
+      .hamburger{display:flex;}
+      .hero-card{flex-wrap:wrap;gap:16px;}
+      .hero-divider{display:none;}
+      .hero-badge{margin-left:0;}
     }
     @media(max-width:720px){
       .page{padding:16px 16px 40px;}
       .kpi-grid{grid-template-columns:1fr 1fr;}
       .ai-pred-grid{grid-template-columns:1fr;}
+      .hero-rate{font-size:48px;}
+    }
+    @media(max-width:480px){
+      .ai-status{display:none;}
+      .report-kpi-grid{grid-template-columns:1fr 1fr;}
     }
   </style>
 </head>
@@ -372,23 +515,77 @@
 <!-- ════ HEADER ════════════════════════════════════════════ -->
 <header class="header">
   <a class="logo" href="#">
-    <div class="logo-icon">🔬</div>
+    <div class="logo-icon">
+      <!-- SVG: Microscope icon -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/>
+        <path d="M9 14h.01"/><path d="M9 6l.5-1 4.5 1.5-1.5 4.5L8 9.5"/>
+        <path d="M9 6V3"/><circle cx="9" cy="6" r="1"/>
+      </svg>
+    </div>
     <div>
       <div>QInspect <span style="color:#fca5a5">AI</span></div>
       <div class="logo-sub">VISUAL DEFECT DETECTION SYSTEM</div>
     </div>
   </a>
-  <nav class="nav-tabs">
-    <div class="nav-tab active" onclick="showPage('dash',this)">📊 ダッシュボード</div>
-    <div class="nav-tab" onclick="showPage('inspect',this)">🔬 AI画像検査</div>
-    <div class="nav-tab" onclick="showPage('trace',this)">🔗 トレーサビリティ</div>
-    <div class="nav-tab" onclick="showPage('report',this)">📈 品質レポート</div>
+
+  <nav class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" onclick="showPage('dash',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      ダッシュボード
+    </div>
+    <div class="nav-tab" onclick="showPage('inspect',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+      AI画像検査
+    </div>
+    <div class="nav-tab" onclick="showPage('trace',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      トレーサビリティ
+    </div>
+    <div class="nav-tab" onclick="showPage('report',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      品質レポート
+    </div>
   </nav>
+
   <div class="header-right">
     <div class="ai-status"><div class="ai-dot"></div>AI VISION ONLINE</div>
+
+    <!-- Dark mode toggle -->
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="ライト/ダークモード切替">
+      <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+
     <div class="user-avatar">高</div>
+
+    <!-- Hamburger (mobile only) -->
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="メニュー">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
+
+<!-- Mobile nav drawer -->
+<div class="nav-drawer" id="navDrawer">
+  <div class="nav-tab active" onclick="showPage('dash',this);closeMenu()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    ダッシュボード
+  </div>
+  <div class="nav-tab" onclick="showPage('inspect',this);closeMenu()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+    AI画像検査
+  </div>
+  <div class="nav-tab" onclick="showPage('trace',this);closeMenu()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    トレーサビリティ
+  </div>
+  <div class="nav-tab" onclick="showPage('report',this);closeMenu()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    品質レポート
+  </div>
+</div>
 
 <main class="main">
 
@@ -397,35 +594,82 @@
   <div class="sec-header">
     <div>
       <div class="sec-title">品質管理ダッシュボード</div>
-      <div class="sec-sub">2026年5月4日（月）｜ AI画像検査リアルタイム監視中</div>
+      <div class="sec-sub"><span id="dash-date"></span>｜ AI画像検査リアルタイム監視中</div>
     </div>
-    <button class="btn btn-ghost">🔄 更新</button>
+    <button class="btn btn-ghost">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/></svg>
+      更新
+    </button>
+  </div>
+
+  <!-- Hero card — 合格率 -->
+  <div class="hero-card">
+    <div class="hero-rate-wrap">
+      <div class="hero-rate-label">本日の合格率</div>
+      <div class="hero-rate" id="hero-pass">97.3%</div>
+      <div class="hero-rate-sub"><span class="up">↑ 0.4%</span> 昨日比</div>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-val" style="color:var(--blue)" id="h-insp">—</div>
+        <div class="hero-stat-lbl">本日検査数</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" style="color:var(--red)" id="h-ng">—</div>
+        <div class="hero-stat-lbl">不良検出数</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" style="color:var(--amber)" id="h-acc">—</div>
+        <div class="hero-stat-lbl">AI検査精度</div>
+      </div>
+    </div>
+    <div class="hero-badge">
+      <div class="hero-badge-val">✅ 目標達成</div>
+      <div class="hero-badge-lbl">月次目標 97.0%</div>
+    </div>
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi-card blue">
+    <div class="kpi-card blue loading" id="kcard1">
       <div class="kpi-label">本日の検査数</div>
       <div class="kpi-val" id="k1">—</div>
+      <div class="kpi-sk sk-val"></div>
       <div class="kpi-trend"><span class="up">↑ 47件</span>&nbsp;昨日比</div>
-      <div class="kpi-icon">🔬</div>
+      <div class="kpi-sk sk-trend"></div>
+      <div class="kpi-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
     </div>
-    <div class="kpi-card green">
+    <div class="kpi-card green loading" id="kcard2">
       <div class="kpi-label">合格率（本日）</div>
       <div class="kpi-val" id="k2">—</div>
+      <div class="kpi-sk sk-val"></div>
       <div class="kpi-trend"><span class="up">↑ 0.4%</span>&nbsp;昨日比</div>
-      <div class="kpi-icon">✅</div>
+      <div class="kpi-sk sk-trend"></div>
+      <div class="kpi-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
     </div>
-    <div class="kpi-card red">
+    <div class="kpi-card red loading" id="kcard3">
       <div class="kpi-label">不良検出数（本日）</div>
       <div class="kpi-val" id="k3">—</div>
+      <div class="kpi-sk sk-val"></div>
       <div class="kpi-trend"><span class="down">↑ 3件</span>&nbsp;昨日比</div>
-      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-sk sk-trend"></div>
+      <div class="kpi-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
     </div>
-    <div class="kpi-card amber">
+    <div class="kpi-card amber loading" id="kcard4">
       <div class="kpi-label">AI検査精度</div>
       <div class="kpi-val" id="k4">—</div>
+      <div class="kpi-sk sk-val"></div>
       <div class="kpi-trend"><span class="up">↑ 0.3%</span>&nbsp;先月比</div>
-      <div class="kpi-icon">🤖</div>
+      <div class="kpi-sk sk-trend"></div>
+      <div class="kpi-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6"/><path d="M15 9l-6 6"/></svg>
+      </div>
     </div>
   </div>
 
@@ -449,7 +693,10 @@
   <div class="card">
     <div class="chart-hdr">
       <div class="chart-title">AIアラート &amp; 品質インサイト</div>
-      <span style="font-size:12px;color:var(--text-3)">4件</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;color:var(--text-3)">4件</span>
+        <a class="see-all-link" href="#">すべて見る →</a>
+      </div>
     </div>
     <div class="alert-item">
       <div class="adot danger"></div>
@@ -495,7 +742,10 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="ai-loading" id="insp-loading"><div class="ai-spin"></div>AIモデル推論中...</div>
-      <button class="btn btn-ai" id="insp-btn" onclick="runInspection()">🔬 AI検査実行</button>
+      <button class="btn btn-ai" id="insp-btn" onclick="runInspection()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        AI検査実行
+      </button>
     </div>
   </div>
 
@@ -795,7 +1045,7 @@
       <div class="sec-sub">AI予測付き工程別不良分析・月次トレンド</div>
     </div>
     <div style="display:flex;gap:8px">
-      <select style="background:var(--surface);border:1px solid var(--border);padding:7px 12px;border-radius:8px;font-size:13px;color:var(--text);cursor:pointer">
+      <select>
         <option>2026年5月（今月）</option>
         <option>2026年4月</option>
         <option>2026年Q1</option>
@@ -882,13 +1132,54 @@ function showPage(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  el.classList.add('active');
+  // Sync both desktop tabs and drawer tabs
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.trim() === el.textContent.trim()) t.classList.add('active');
+  });
   if (id === 'report' && !reportInit) initReportCharts();
 }
 
-// ── Chart defaults ────────────────────────────────────────
+// ── Dark / Light mode toggle ──────────────────────────────
+let isDark = true;
+const SUN_SVG = `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
+const MOON_SVG = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+
+function toggleTheme() {
+  isDark = !isDark;
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('themeIcon').innerHTML = SUN_SVG;
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeIcon').innerHTML = MOON_SVG;
+  }
+}
+
+// ── Hamburger menu ────────────────────────────────────────
+function toggleMenu() {
+  const ham = document.getElementById('hamburger');
+  const drawer = document.getElementById('navDrawer');
+  ham.classList.toggle('open');
+  drawer.classList.toggle('open');
+}
+function closeMenu() {
+  document.getElementById('hamburger').classList.remove('open');
+  document.getElementById('navDrawer').classList.remove('open');
+}
+
+// ── Dynamic date ──────────────────────────────────────────
+function setDashDate() {
+  const d = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  const y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+  const dow = days[d.getDay()];
+  document.getElementById('dash-date').textContent =
+    `${y}年${m}月${day}日（${dow}）`;
+}
+
+// ── Chart defaults (dark-theme friendly) ─────────────────
 Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = '#e2e8f0';
+Chart.defaults.borderColor = 'rgba(255,255,255,.07)';
 Chart.defaults.font.family = "'Inter', sans-serif";
 Chart.defaults.font.size = 11;
 
@@ -910,12 +1201,23 @@ function countUp(el, to, suffix, ms) {
 
 // ── Dashboard init ────────────────────────────────────────
 function initDash() {
+  // Skeleton → real values after short delay
   setTimeout(() => {
+    ['kcard1','kcard2','kcard3','kcard4'].forEach(id => {
+      document.getElementById(id).classList.remove('loading');
+    });
     countUp(document.getElementById('k1'), 1284, '件', 1100);
     countUp(document.getElementById('k2'), 97.3, '%', 1200);
     countUp(document.getElementById('k3'), 35, '件', 900);
     countUp(document.getElementById('k4'), 99.6, '%', 1050);
-  }, 300);
+    // Hero mini stats
+    countUp(document.getElementById('h-insp'), 1284, '件', 1100);
+    countUp(document.getElementById('h-ng'), 35, '件', 900);
+    countUp(document.getElementById('h-acc'), 99.6, '%', 1050);
+  }, 600);
+
+  const GRID_C = 'rgba(255,255,255,.07)';
+  const TICK_C = '#64748b';
 
   // Trend chart
   new Chart(document.getElementById('trendChart'), {
@@ -925,26 +1227,26 @@ function initDash() {
       datasets: [{
         label: '不良率',
         data: [2.1, 1.8, 2.3, 1.9, 2.7, 2.1, 2.7],
-        borderColor: '#dc2626', borderWidth: 2.5,
-        backgroundColor: 'rgba(220,38,38,.06)',
-        pointBackgroundColor: '#dc2626', pointRadius: 5,
+        borderColor: '#ef4444', borderWidth: 2.5,
+        backgroundColor: 'rgba(239,68,68,.08)',
+        pointBackgroundColor: '#ef4444', pointRadius: 5,
         tension: 0.4, fill: true,
       },{
         label: '管理限界',
         data: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
-        borderColor: 'rgba(217,119,6,.6)', borderWidth:1.5, borderDash:[5,4],
+        borderColor: 'rgba(245,158,11,.65)', borderWidth:1.5, borderDash:[5,4],
         pointRadius:0, fill:false,
       }]
     },
     options: {
       responsive:true,
       plugins:{
-        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        legend:{labels:{color:TICK_C,usePointStyle:true,font:{size:11}}},
         tooltip:{...TT, callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}
       },
       scales:{
-        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
-        y:{grid:{color:'#f1f5f9'},min:0,max:4,ticks:{color:'#64748b',callback:v=>v+'%'}}
+        x:{grid:{color:GRID_C},ticks:{color:TICK_C}},
+        y:{grid:{color:GRID_C},min:0,max:4,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
   });
@@ -956,14 +1258,14 @@ function initDash() {
       labels: ['気泡(Void)', 'クラック', '寸法不良', '表面傷', 'その他'],
       datasets: [{
         data: [35, 20, 18, 15, 12],
-        backgroundColor: ['#dc2626','#d97706','#2563eb','#7c3aed','#94a3b8'],
-        borderWidth: 2, borderColor: '#fff',
+        backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#a78bfa','#64748b'],
+        borderWidth: 2, borderColor: '#0c1220',
       }]
     },
     options: {
       responsive:true, cutout:'62%',
       plugins:{
-        legend:{position:'right',labels:{color:'#64748b',usePointStyle:true,padding:16,font:{size:11}}},
+        legend:{position:'right',labels:{color:TICK_C,usePointStyle:true,padding:16,font:{size:11}}},
         tooltip:{...TT, callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}}
       }
     }
@@ -1016,31 +1318,26 @@ function selectProduct(key, el) {
 // ── Canvas Draw Functions ─────────────────────────────────
 function drawDieCast(ctx) {
   const W = ctx.canvas.width, H = ctx.canvas.height;
-  // Background — inspection table
   ctx.fillStyle = '#e2e6ed'; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(0,0,0,.06)'; ctx.lineWidth=1;
   for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
-  // Part body
   const pg=ctx.createLinearGradient(95,45,545,315);
   pg.addColorStop(0,'#d0d4de'); pg.addColorStop(0.35,'#e4e8f0'); pg.addColorStop(1,'#aab0bc');
   ctx.fillStyle=pg;
   ctx.beginPath(); ctx.roundRect(95,45,450,270,12); ctx.fill();
 
-  // Sheen
   const sh=ctx.createLinearGradient(95,45,95,155);
   sh.addColorStop(0,'rgba(255,255,255,.55)'); sh.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle=sh;
   ctx.beginPath(); ctx.roundRect(95,45,450,110,[12,12,0,0]); ctx.fill();
 
-  // Shadow edge
   const sd=ctx.createLinearGradient(95,285,95,315);
   sd.addColorStop(0,'rgba(0,0,0,0)'); sd.addColorStop(1,'rgba(0,0,0,.15)');
   ctx.fillStyle=sd;
   ctx.beginPath(); ctx.roundRect(95,285,450,30,[0,0,12,12]); ctx.fill();
 
-  // Bolt holes
   [[137,90],[503,90],[137,270],[503,270]].forEach(([x,y])=>{
     ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fillStyle='#9198a8'; ctx.fill();
     ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2);
@@ -1051,11 +1348,9 @@ function drawDieCast(ctx) {
     ctx.fillStyle='rgba(255,255,255,.45)'; ctx.fill();
   });
 
-  // Machining marks
   ctx.strokeStyle='rgba(0,0,0,.1)'; ctx.lineWidth=0.7;
   for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(195,88+i*18);ctx.lineTo(445,88+i*18);ctx.stroke();}
 
-  // Center boss
   const bg=ctx.createRadialGradient(318,178,8,320,180,58);
   bg.addColorStop(0,'#d8dce6'); bg.addColorStop(1,'#a0a8b8');
   ctx.beginPath(); ctx.arc(320,180,58,0,Math.PI*2); ctx.fillStyle=bg; ctx.fill();
@@ -1065,22 +1360,18 @@ function drawDieCast(ctx) {
   ctx.beginPath(); ctx.arc(320,180,20,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
   ctx.beginPath(); ctx.arc(315,175,5,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
 
-  // Defect 1: Void (subtle dark spot near boss)
   ctx.beginPath(); ctx.ellipse(244,149,9,7,0.3,0,Math.PI*2);
   ctx.fillStyle='rgba(25,30,45,.8)'; ctx.fill();
   ctx.beginPath(); ctx.ellipse(241,147,4,3,0.3,0,Math.PI*2);
   ctx.fillStyle='rgba(10,14,25,.9)'; ctx.fill();
-  // Void highlight ring
   ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.ellipse(244,149,10,8,0.3,0,Math.PI*2); ctx.stroke();
 
-  // Defect 2: Crack
   ctx.strokeStyle='rgba(20,25,40,.75)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(373,113); ctx.lineTo(389,127); ctx.lineTo(384,141); ctx.stroke();
   ctx.lineWidth=0.7; ctx.strokeStyle='rgba(20,25,40,.4)';
   ctx.beginPath(); ctx.moveTo(389,127); ctx.lineTo(396,131); ctx.stroke();
 
-  // Markings
   ctx.fillStyle='rgba(45,55,80,.5)'; ctx.font='bold 10px IBM Plex Mono';
   ctx.fillText('ADC-X200  LOT: L2605-089', 180,300);
   ctx.fillText('2026-05-02', 180,314);
@@ -1088,11 +1379,9 @@ function drawDieCast(ctx) {
 
 function drawPCB(ctx) {
   const W=ctx.canvas.width, H=ctx.canvas.height;
-  // PCB body
   ctx.fillStyle='#1a3a24'; ctx.fillRect(70,35,500,290);
   ctx.fillStyle='#1f4a2c'; ctx.fillRect(70,35,500,290);
 
-  // Copper traces
   ctx.strokeStyle='rgba(184,134,11,.75)'; ctx.lineWidth=2.5;
   const traces=[[110,280,110,110],[570,280,570,110],[110,180,570,180],[110,110,570,110],[110,280,570,280]];
   traces.forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
@@ -1100,7 +1389,6 @@ function drawPCB(ctx) {
     ctx.beginPath();ctx.moveTo(x,70);ctx.lineTo(x,310);ctx.stroke();
   });
 
-  // Pads
   [[170,110],[230,110],[290,110],[350,110],[410,110],[470,110],
    [170,180],[230,180],[290,180],[350,180],[410,180],[470,180],
    [170,280],[230,280],[290,280],[350,280],[410,280],[470,280]].forEach(([x,y])=>{
@@ -1108,15 +1396,12 @@ function drawPCB(ctx) {
     ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle='#b89018'; ctx.fill();
   });
 
-  // ICs — black rectangles with pins
   [[145,75,120,70,'U1 — MCU'],[305,75,120,70,'U2 — PWR'],[145,215,120,70,'U3 — MEM']].forEach(([x,y,w,h,lbl])=>{
     ctx.fillStyle='#111827'; ctx.fillRect(x,y,w,h);
     ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
-    // IC surface marking
     ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(x+4,y+4,w-8,h-8);
     ctx.fillStyle='rgba(255,255,255,.4)'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center';
     ctx.fillText(lbl,x+w/2,y+h/2+3); ctx.textAlign='left';
-    // Pins
     for(let i=0;i<4;i++){
       ctx.fillStyle='#c8a020';
       ctx.fillRect(x-6,y+9+i*14,6,8);
@@ -1124,7 +1409,6 @@ function drawPCB(ctx) {
     }
   });
 
-  // Capacitors
   [[480,100],[480,165],[480,225]].forEach(([x,y])=>{
     ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.fillStyle='#1d3a6e'; ctx.fill();
     ctx.beginPath(); ctx.arc(x,y,9,0,Math.PI*2); ctx.fillStyle='#1e4080'; ctx.fill();
@@ -1132,7 +1416,6 @@ function drawPCB(ctx) {
     ctx.fillText('10μ',x,y+2); ctx.textAlign='left';
   });
 
-  // Resistors
   [[540,130],[540,180],[540,230]].forEach(([x,y])=>{
     ctx.fillStyle='#8b6914'; ctx.fillRect(x-14,y-5,28,10);
     ctx.strokeStyle='#c8a020'; ctx.lineWidth=1.5;
@@ -1140,19 +1423,14 @@ function drawPCB(ctx) {
     ctx.beginPath();ctx.moveTo(x+14,y);ctx.lineTo(x+20,y);ctx.stroke();
   });
 
-  // DEFECT: Solder bridge (excess solder between pins)
   ctx.fillStyle='rgba(218,165,32,.92)';
   ctx.beginPath(); ctx.ellipse(356,183,14,6,0.15,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(200,150,20,.95)';
   ctx.beginPath(); ctx.arc(352,180,5,0,Math.PI*2); ctx.fill();
-  // Extra blob
   ctx.fillStyle='rgba(220,170,30,.8)';
   ctx.beginPath(); ctx.ellipse(362,185,6,4,0.3,0,Math.PI*2); ctx.fill();
 
-  // PCB border
   ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.strokeRect(70,35,500,290);
-
-  // Markings
   ctx.fillStyle='rgba(200,220,200,.35)'; ctx.font='bold 9px IBM Plex Mono';
   ctx.fillText('PCB-Z400  Rev.3.1  LOT: L2605-095', 155,335);
 }
@@ -1164,22 +1442,18 @@ function drawPlastic(ctx) {
   for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
-  // Main body (off-white plastic)
   const pg=ctx.createLinearGradient(110,50,530,310);
   pg.addColorStop(0,'#f5f0ea'); pg.addColorStop(0.5,'#ede5d8'); pg.addColorStop(1,'#ddd3c5');
   ctx.fillStyle=pg; ctx.beginPath(); ctx.roundRect(110,50,420,260,10); ctx.fill();
 
-  // Sheen
   const sh=ctx.createLinearGradient(110,50,110,130);
   sh.addColorStop(0,'rgba(255,255,255,.7)'); sh.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle=sh; ctx.beginPath(); ctx.roundRect(110,50,420,80,[10,10,0,0]); ctx.fill();
 
-  // Ribs
   ctx.strokeStyle='rgba(0,0,0,.09)'; ctx.lineWidth=1.5;
   [190,270,350,430].forEach(x=>{ctx.beginPath();ctx.moveTo(x,60);ctx.lineTo(x,300);ctx.stroke();});
   [120,170,220,270].forEach(dy=>{ctx.beginPath();ctx.moveTo(120,60+dy);ctx.lineTo(520,60+dy);ctx.stroke();});
 
-  // Boss features (6 mounting bosses)
   [[170,115],[320,115],[470,115],[170,245],[320,245],[470,245]].forEach(([x,y])=>{
     const bg=ctx.createRadialGradient(x-3,y-3,3,x,y,22);
     bg.addColorStop(0,'#d9d1c4'); bg.addColorStop(1,'#c4bbb0');
@@ -1192,13 +1466,11 @@ function drawPlastic(ctx) {
     ctx.beginPath(); ctx.arc(x-1,y-2,2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.4)'; ctx.fill();
   });
 
-  // Gate mark
   ctx.beginPath(); ctx.arc(320,180,8,0,Math.PI*2);
   ctx.fillStyle='#c0b8aa'; ctx.fill();
   ctx.beginPath(); ctx.arc(320,180,4,0,Math.PI*2);
   ctx.fillStyle='#a09890'; ctx.fill();
 
-  // Label
   ctx.fillStyle='rgba(80,70,60,.45)'; ctx.font='bold 9px IBM Plex Mono';
   ctx.fillText('INJ-S100  LOT: L2605-102  POM', 185,298);
   ctx.fillText('2026-05-04  ↑ GATE', 240,312);
@@ -1243,7 +1515,6 @@ function runInspection() {
   loading.classList.add('show');
   document.getElementById('insp-status').textContent = 'AIモデル推論中 — 画像取得・前処理...';
 
-  // Reset overlay
   document.getElementById('detectOverlay').innerHTML = '';
   document.getElementById('verdictOverlay').classList.remove('show');
 
@@ -1251,7 +1522,6 @@ function runInspection() {
   const totalH = canvas.height;
   const wrap = document.getElementById('canvasWrap');
   const displayH = wrap.offsetHeight;
-  const scale = displayH / totalH;
 
   const scanLine = document.getElementById('scanLine');
   scanLine.style.top = '-4px';
@@ -1259,7 +1529,7 @@ function runInspection() {
 
   let y = 0;
   let frameCount = 0;
-  const totalFrames = 60; // ~2 seconds at 30fps
+  const totalFrames = 60;
 
   function scanStep() {
     y = (frameCount / totalFrames) * displayH;
@@ -1277,26 +1547,19 @@ function runInspection() {
     if (frameCount < totalFrames) {
       setTimeout(scanStep, 33);
     } else {
-      // Scan done
       scanLine.classList.remove('scanning');
       loading.classList.remove('show');
-      showDetections(scale);
+      showDetections();
     }
   }
   scanStep();
 }
 
-function showDetections(scale) {
+function showDetections() {
   const p = PRODUCTS[currentProduct];
-  const canvas = document.getElementById('inspCanvas');
-  const wrap = document.getElementById('canvasWrap');
-  const displayW = wrap.offsetWidth;
-  const displayH = wrap.offsetHeight;
-
   const overlay = document.getElementById('detectOverlay');
   overlay.innerHTML = '';
 
-  // Show detection boxes one by one
   p.defects.forEach((d, i) => {
     setTimeout(() => {
       const box = document.createElement('div');
@@ -1317,18 +1580,15 @@ function showDetections(scale) {
     }, i * 400);
   });
 
-  // After all boxes shown, display verdict
   setTimeout(() => {
     showVerdict(p);
   }, p.defects.length * 400 + 600);
 }
 
 function showVerdict(p) {
-  // Update detect list
   const container = document.getElementById('detect-items');
   container.innerHTML = '';
-  document.getElementById('detect-count').textContent =
-    `（${p.defects.length}件検出）`;
+  document.getElementById('detect-count').textContent = `（${p.defects.length}件検出）`;
 
   if (p.defects.length === 0) {
     container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-weight:700;font-size:14px">✅ 欠陥は検出されませんでした</div>';
@@ -1352,7 +1612,6 @@ function showVerdict(p) {
         </div>
       `;
     });
-    // Animate bars
     setTimeout(() => {
       document.querySelectorAll('.conf-bar-fill').forEach(el => {
         el.style.width = el.dataset.conf + '%';
@@ -1360,7 +1619,6 @@ function showVerdict(p) {
     }, 50);
   }
 
-  // Score
   const scoreEl = document.getElementById('score-num');
   const barEl = document.getElementById('score-bar');
   const isPass = p.verdict === 'pass';
@@ -1376,7 +1634,6 @@ function showVerdict(p) {
   barEl.style.width = targetScore + '%';
   barEl.style.background = isPass ? 'var(--green)' : 'var(--red)';
 
-  // Verdict overlay
   const vo = document.getElementById('verdictOverlay');
   const vb = document.getElementById('verdictBadge');
   const vl = document.getElementById('verdictLabel');
@@ -1397,8 +1654,9 @@ function showVerdict(p) {
 let reportInit = false;
 function initReportCharts() {
   reportInit = true;
+  const GRID_C = 'rgba(255,255,255,.07)';
+  const TICK_C = '#64748b';
 
-  // Process defect rate
   new Chart(document.getElementById('procChart'), {
     type: 'bar',
     data: {
@@ -1406,8 +1664,8 @@ function initReportCharts() {
       datasets: [{
         label: '不良率',
         data: [1.2, 2.8, 1.8, 3.2, 0.8],
-        backgroundColor: ['rgba(37,99,235,.65)','rgba(220,38,38,.7)','rgba(37,99,235,.55)','rgba(220,38,38,.85)','rgba(5,150,105,.65)'],
-        borderColor: ['#2563eb','#dc2626','#2563eb','#dc2626','#059669'],
+        backgroundColor: ['rgba(59,130,246,.65)','rgba(239,68,68,.7)','rgba(59,130,246,.55)','rgba(239,68,68,.85)','rgba(16,185,129,.65)'],
+        borderColor: ['#3b82f6','#ef4444','#3b82f6','#ef4444','#10b981'],
         borderWidth: 1, borderRadius: 5,
       }]
     },
@@ -1418,13 +1676,12 @@ function initReportCharts() {
         tooltip:{...TT, callbacks:{label:c=>` 不良率: ${c.parsed.y}%`}}
       },
       scales:{
-        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
-        y:{grid:{color:'#f1f5f9'},min:0,max:5,ticks:{color:'#64748b',callback:v=>v+'%'}}
+        x:{grid:{color:GRID_C},ticks:{color:TICK_C}},
+        y:{grid:{color:GRID_C},min:0,max:5,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
   });
 
-  // Monthly trend
   new Chart(document.getElementById('monthChart'), {
     type: 'line',
     data: {
@@ -1433,14 +1690,14 @@ function initReportCharts() {
         {
           label: '不良率',
           data: [3.2,3.8,3.1,2.9,3.4,2.7,2.5,2.8,2.6,2.4,2.7,2.7],
-          borderColor:'#dc2626', borderWidth:2.5,
-          backgroundColor:'rgba(220,38,38,.05)',
-          pointBackgroundColor:'#dc2626', pointRadius:4, tension:0.4, fill:true,
+          borderColor:'#ef4444', borderWidth:2.5,
+          backgroundColor:'rgba(239,68,68,.06)',
+          pointBackgroundColor:'#ef4444', pointRadius:4, tension:0.4, fill:true,
         },
         {
           label: '目標値',
           data: [3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0],
-          borderColor:'rgba(217,119,6,.65)', borderWidth:1.5, borderDash:[5,4],
+          borderColor:'rgba(245,158,11,.65)', borderWidth:1.5, borderDash:[5,4],
           pointRadius:0, fill:false,
         }
       ]
@@ -1448,17 +1705,16 @@ function initReportCharts() {
     options: {
       responsive:true,
       plugins:{
-        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        legend:{labels:{color:TICK_C,usePointStyle:true,font:{size:11}}},
         tooltip:{...TT, callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}
       },
       scales:{
-        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
-        y:{grid:{color:'#f1f5f9'},min:0,max:5,ticks:{color:'#64748b',callback:v=>v+'%'}}
+        x:{grid:{color:GRID_C},ticks:{color:TICK_C}},
+        y:{grid:{color:GRID_C},min:0,max:5,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
   });
 
-  // Pareto
   new Chart(document.getElementById('paretoChart'), {
     type: 'bar',
     data: {
@@ -1467,15 +1723,15 @@ function initReportCharts() {
         {
           label: '件数',
           data: [267, 153, 137, 115, 91],
-          backgroundColor: ['rgba(220,38,38,.75)','rgba(217,119,6,.7)','rgba(37,99,235,.6)','rgba(124,58,237,.6)','rgba(148,163,184,.5)'],
+          backgroundColor: ['rgba(239,68,68,.75)','rgba(245,158,11,.7)','rgba(59,130,246,.6)','rgba(167,139,250,.6)','rgba(100,116,139,.5)'],
           borderWidth:0, borderRadius:4, yAxisID:'y',
         },
         {
           label: '累積比率',
           data: [35.0, 55.1, 73.1, 88.2, 100.0],
           type: 'line',
-          borderColor:'#059669', borderWidth:2.5,
-          pointBackgroundColor:'#059669', pointRadius:5, tension:0.2,
+          borderColor:'#10b981', borderWidth:2.5,
+          pointBackgroundColor:'#10b981', pointRadius:5, tension:0.2,
           yAxisID:'y2', fill:false,
         }
       ]
@@ -1483,13 +1739,13 @@ function initReportCharts() {
     options: {
       responsive:true,
       plugins:{
-        legend:{labels:{color:'#64748b',usePointStyle:true,font:{size:11}}},
+        legend:{labels:{color:TICK_C,usePointStyle:true,font:{size:11}}},
         tooltip:{...TT}
       },
       scales:{
-        x:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
-        y:{grid:{color:'#f1f5f9'},ticks:{color:'#64748b'}},
-        y2:{position:'right',min:0,max:110,grid:{display:false},ticks:{color:'#059669',callback:v=>v+'%'}}
+        x:{grid:{color:GRID_C},ticks:{color:TICK_C}},
+        y:{grid:{color:GRID_C},ticks:{color:TICK_C}},
+        y2:{position:'right',min:0,max:110,grid:{display:false},ticks:{color:'#10b981',callback:v=>v+'%'}}
       }
     }
   });
@@ -1497,8 +1753,11 @@ function initReportCharts() {
 
 // ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  setDashDate();
   initDash();
   drawProduct();
+  // Set initial theme icon to sun (dark mode is default)
+  document.getElementById('themeIcon').innerHTML = SUN_SVG;
 });
 </script>
 </body>
