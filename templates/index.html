@@ -11,10 +11,10 @@
     :root {
       --bg:       #0c1220;
       --bg-alt:   #111827;
-      --surface:  rgba(255,255,255,.05);
-      --sf2:      rgba(255,255,255,.03);
-      --border:   rgba(255,255,255,.09);
-      --border-b: rgba(255,255,255,.15);
+      --surface:  rgba(255,255,255,.08);
+      --sf2:      rgba(255,255,255,.04);
+      --border:   rgba(255,255,255,.13);
+      --border-b: rgba(255,255,255,.22);
       --text:     #e2e8f0;
       --text-2:   #94a3b8;
       --text-3:   #64748b;
@@ -130,14 +130,21 @@
     .hamburger.open span:nth-child(2){opacity:0;}
     .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 
-    /* Mobile nav drawer */
+    /* Mobile nav drawer — slide animation */
     .nav-drawer {
-      display:none;position:fixed;top:60px;left:0;right:0;
+      position:fixed;top:60px;left:0;right:0;
       background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1);
       z-index:99;padding:12px 16px;flex-direction:column;gap:4px;
       box-shadow:0 8px 32px rgba(0,0,0,.4);
+      display:flex;
+      opacity:0;visibility:hidden;pointer-events:none;
+      transform:translateY(-8px);
+      transition:opacity .2s ease, transform .2s ease, visibility .2s;
     }
-    .nav-drawer.open{display:flex;}
+    .nav-drawer.open{
+      opacity:1;visibility:visible;pointer-events:auto;
+      transform:translateY(0);
+    }
     .nav-drawer .nav-tab{justify-content:flex-start;}
 
     /* ── LAYOUT ──────────────────────────────────────────── */
@@ -180,12 +187,17 @@
     .hero-stat-val{font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;line-height:1;}
     .hero-stat-lbl{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;}
     .hero-badge {
-      margin-left:auto;flex-shrink:0;
-      background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);
-      border-radius:10px;padding:10px 16px;text-align:center;
+      background:rgba(16,185,129,.13);border:1px solid rgba(16,185,129,.28);
+      border-radius:8px;padding:8px 12px;text-align:center;
     }
-    .hero-badge-val{font-size:13px;font-weight:700;color:var(--green);}
+    .hero-badge-val{font-size:12px;font-weight:700;color:var(--green);}
     .hero-badge-lbl{font-size:10px;color:var(--text-3);margin-top:2px;}
+    /* ライン別バー */
+    .hero-line-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+    .hero-line-lbl{font-size:11px;font-weight:600;color:var(--text-3);width:40px;flex-shrink:0;}
+    .hero-line-bar-bg{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+    .hero-line-bar{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+    .hero-line-val{font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:700;width:56px;text-align:right;flex-shrink:0;}
 
     /* ── KPI CARDS ───────────────────────────────────────── */
     .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
@@ -194,7 +206,10 @@
       padding:20px 20px 16px;position:relative;overflow:hidden;
       box-shadow:0 1px 3px rgba(0,0,0,.15);transition:box-shadow .2s,transform .2s;
     }
-    .kpi-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.25);transform:translateY(-2px);}
+    .kpi-card.blue:hover{box-shadow:0 4px 24px rgba(59,130,246,.22);transform:translateY(-2px);}
+    .kpi-card.green:hover{box-shadow:0 4px 24px rgba(16,185,129,.22);transform:translateY(-2px);}
+    .kpi-card.red:hover{box-shadow:0 4px 24px rgba(239,68,68,.22);transform:translateY(-2px);}
+    .kpi-card.amber:hover{box-shadow:0 4px 24px rgba(245,158,11,.22);transform:translateY(-2px);}
     .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
     .kpi-card.blue::before{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
     .kpi-card.green::before{background:linear-gradient(90deg,#10b981,#34d399);}
@@ -268,6 +283,9 @@
 
     /* ── CHART GRID ──────────────────────────────────────── */
     .chart-grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+    /* Dashboard: trend full-width on top, mode donut below in 2-col */
+    .dash-chart-grid{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:20px;}
+    @media(max-width:1100px){.dash-chart-grid{grid-template-columns:1fr;}}
 
     /* ── INSPECTION PAGE ─────────────────────────────────── */
     .prod-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
@@ -551,9 +569,10 @@
   <div class="header-right">
     <div class="ai-status"><div class="ai-dot"></div>AI VISION ONLINE</div>
 
-    <!-- Dark mode toggle -->
+    <!-- Dark mode toggle (Fix 6: inline SVG = no FOUC) -->
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="ライト/ダークモード切替">
       <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Sun icon — shown by default (dark mode active, click to switch to light) -->
         <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
       </svg>
     </button>
@@ -602,31 +621,58 @@
     </button>
   </div>
 
-  <!-- Hero card — 合格率 -->
+  <!-- Hero card — Fix 1: 合格率 + ユニーク情報（KPI重複なし） -->
   <div class="hero-card">
+    <!-- 大きな合格率 -->
     <div class="hero-rate-wrap">
       <div class="hero-rate-label">本日の合格率</div>
-      <div class="hero-rate" id="hero-pass">97.3%</div>
-      <div class="hero-rate-sub"><span class="up">↑ 0.4%</span> 昨日比</div>
+      <div class="hero-rate" id="hero-pass">—</div>
+      <div class="hero-rate-sub"><span class="up">↑ 0.4%</span>&nbsp;昨日比</div>
     </div>
     <div class="hero-divider"></div>
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-val" style="color:var(--blue)" id="h-insp">—</div>
-        <div class="hero-stat-lbl">本日検査数</div>
+    <!-- ライン別状況（KPIカードにない情報） -->
+    <div style="flex:1;min-width:0">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px">ライン別合格率（本日）</div>
+      <div class="hero-line-row">
+        <span class="hero-line-lbl">ライン1</span>
+        <div class="hero-line-bar-bg"><div class="hero-line-bar" style="width:99.1%;background:var(--green)"></div></div>
+        <span class="hero-line-val" style="color:var(--green)">99.1%</span>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-val" style="color:var(--red)" id="h-ng">—</div>
-        <div class="hero-stat-lbl">不良検出数</div>
+      <div class="hero-line-row">
+        <span class="hero-line-lbl">ライン2</span>
+        <div class="hero-line-bar-bg"><div class="hero-line-bar" style="width:98.2%;background:var(--green)"></div></div>
+        <span class="hero-line-val" style="color:var(--green)">98.2%</span>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-val" style="color:var(--amber)" id="h-acc">—</div>
-        <div class="hero-stat-lbl">AI検査精度</div>
+      <div class="hero-line-row">
+        <span class="hero-line-lbl">ライン3</span>
+        <div class="hero-line-bar-bg"><div class="hero-line-bar" style="width:91.4%;background:var(--red)"></div></div>
+        <span class="hero-line-val" style="color:var(--red)">91.4% ⚠</span>
+      </div>
+      <div class="hero-line-row" style="border-bottom:none">
+        <span class="hero-line-lbl">ライン4</span>
+        <div class="hero-line-bar-bg"><div class="hero-line-bar" style="width:97.8%;background:var(--amber)"></div></div>
+        <span class="hero-line-val" style="color:var(--amber)">97.8%</span>
       </div>
     </div>
-    <div class="hero-badge">
-      <div class="hero-badge-val">✅ 目標達成</div>
-      <div class="hero-badge-lbl">月次目標 97.0%</div>
+    <div class="hero-divider"></div>
+    <!-- 月次目標達成ゲージ（KPIカードにない情報） -->
+    <div style="flex-shrink:0;text-align:center;min-width:110px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">月次目標進捗</div>
+      <div style="position:relative;width:80px;height:80px;margin:0 auto 8px">
+        <svg viewBox="0 0 80 80" style="transform:rotate(-90deg);width:80px;height:80px">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="8"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--green)" stroke-width="8"
+            stroke-dasharray="201" stroke-dashoffset="32" stroke-linecap="round"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:16px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--green)">97.3</div>
+          <div style="font-size:8px;color:var(--text-3);font-weight:700">/ 97.0%</div>
+        </div>
+      </div>
+      <div class="hero-badge">
+        <div class="hero-badge-val">✅ 目標達成</div>
+        <div class="hero-badge-lbl">5月度</div>
+      </div>
     </div>
   </div>
 
@@ -673,20 +719,21 @@
     </div>
   </div>
 
-  <div class="chart-grid2">
+  <!-- Fix 3: dash-chart-grid (3fr:2fr) prevents donut squish -->
+  <div class="dash-chart-grid">
     <div class="card">
       <div class="chart-hdr">
         <div class="chart-title">週別不良率トレンド</div>
         <span class="badge badge-live">● LIVE</span>
       </div>
-      <canvas id="trendChart" height="200"></canvas>
+      <canvas id="trendChart" height="180"></canvas>
     </div>
     <div class="card">
       <div class="chart-hdr">
         <div class="chart-title">不良モード別構成比（今月）</div>
         <span class="badge badge-ai">AI分類</span>
       </div>
-      <canvas id="modeChart" height="200"></canvas>
+      <canvas id="modeChart" height="180"></canvas>
     </div>
   </div>
 
@@ -1139,10 +1186,35 @@ function showPage(id, el) {
   if (id === 'report' && !reportInit) initReportCharts();
 }
 
-// ── Dark / Light mode toggle ──────────────────────────────
+// ── Dark / Light mode toggle (Fix 4: chart color update) ─
 let isDark = true;
 const SUN_SVG = `<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>`;
 const MOON_SVG = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+
+// Fix 4: Store all chart instances for live re-theming
+const allCharts = [];
+
+function updateChartsTheme(dark) {
+  const gridC  = dark ? 'rgba(255,255,255,.07)' : '#f1f5f9';
+  const tickC  = dark ? '#64748b' : '#64748b';
+  const dotBdr = dark ? '#0c1220' : '#ffffff';
+  allCharts.forEach(chart => {
+    // Update donut border color
+    if (chart.config.type === 'doughnut') {
+      if (chart.data.datasets[0]) {
+        chart.data.datasets[0].borderColor = dotBdr;
+      }
+    }
+    // Update scale grid/tick colors
+    if (chart.options.scales) {
+      Object.values(chart.options.scales).forEach(scale => {
+        if (scale.grid) scale.grid.color = gridC;
+        if (scale.ticks && scale.ticks.color !== '#10b981') scale.ticks.color = tickC;
+      });
+    }
+    chart.update('none'); // 'none' = no animation, instant
+  });
+}
 
 function toggleTheme() {
   isDark = !isDark;
@@ -1153,6 +1225,7 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', 'light');
     document.getElementById('themeIcon').innerHTML = MOON_SVG;
   }
+  updateChartsTheme(isDark);
 }
 
 // ── Hamburger menu ────────────────────────────────────────
@@ -1201,7 +1274,7 @@ function countUp(el, to, suffix, ms) {
 
 // ── Dashboard init ────────────────────────────────────────
 function initDash() {
-  // Skeleton → real values after short delay
+  // Skeleton → real values after short delay (Fix 1: hero-pass countUp added)
   setTimeout(() => {
     ['kcard1','kcard2','kcard3','kcard4'].forEach(id => {
       document.getElementById(id).classList.remove('loading');
@@ -1210,17 +1283,15 @@ function initDash() {
     countUp(document.getElementById('k2'), 97.3, '%', 1200);
     countUp(document.getElementById('k3'), 35, '件', 900);
     countUp(document.getElementById('k4'), 99.6, '%', 1050);
-    // Hero mini stats
-    countUp(document.getElementById('h-insp'), 1284, '件', 1100);
-    countUp(document.getElementById('h-ng'), 35, '件', 900);
-    countUp(document.getElementById('h-acc'), 99.6, '%', 1050);
+    // Hero 合格率 countUp
+    countUp(document.getElementById('hero-pass'), 97.3, '%', 1400);
   }, 600);
 
   const GRID_C = 'rgba(255,255,255,.07)';
   const TICK_C = '#64748b';
 
-  // Trend chart
-  new Chart(document.getElementById('trendChart'), {
+  // Trend chart (registered in allCharts for Fix 4)
+  allCharts.push(new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
       labels: ['4/28', '4/29', '4/30', '5/1', '5/2', '5/3', '5/4（本日）'],
@@ -1249,10 +1320,10 @@ function initDash() {
         y:{grid:{color:GRID_C},min:0,max:4,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
-  });
+  }));
 
-  // Mode donut chart
-  new Chart(document.getElementById('modeChart'), {
+  // Mode donut chart (Fix 3: legend bottom, Fix 4: registered)
+  allCharts.push(new Chart(document.getElementById('modeChart'), {
     type: 'doughnut',
     data: {
       labels: ['気泡(Void)', 'クラック', '寸法不良', '表面傷', 'その他'],
@@ -1263,13 +1334,13 @@ function initDash() {
       }]
     },
     options: {
-      responsive:true, cutout:'62%',
+      responsive:true, cutout:'60%',
       plugins:{
-        legend:{position:'right',labels:{color:TICK_C,usePointStyle:true,padding:16,font:{size:11}}},
+        legend:{position:'bottom',labels:{color:TICK_C,usePointStyle:true,padding:12,font:{size:11}}},
         tooltip:{...TT, callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}}
       }
     }
-  });
+  }));
 }
 
 // ── PRODUCT DATA ──────────────────────────────────────────
@@ -1657,7 +1728,7 @@ function initReportCharts() {
   const GRID_C = 'rgba(255,255,255,.07)';
   const TICK_C = '#64748b';
 
-  new Chart(document.getElementById('procChart'), {
+  allCharts.push(new Chart(document.getElementById('procChart'), {
     type: 'bar',
     data: {
       labels: ['素材受入', 'ダイカスト成形', '機械加工', '表面処理', '最終検査'],
@@ -1680,9 +1751,9 @@ function initReportCharts() {
         y:{grid:{color:GRID_C},min:0,max:5,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
-  });
+  }));
 
-  new Chart(document.getElementById('monthChart'), {
+  allCharts.push(new Chart(document.getElementById('monthChart'), {
     type: 'line',
     data: {
       labels: ['6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月'],
@@ -1713,9 +1784,9 @@ function initReportCharts() {
         y:{grid:{color:GRID_C},min:0,max:5,ticks:{color:TICK_C,callback:v=>v+'%'}}
       }
     }
-  });
+  }));
 
-  new Chart(document.getElementById('paretoChart'), {
+  allCharts.push(new Chart(document.getElementById('paretoChart'), {
     type: 'bar',
     data: {
       labels: ['気泡(Void)', 'クラック', '寸法不良', '表面傷', 'その他'],
@@ -1748,7 +1819,7 @@ function initReportCharts() {
         y2:{position:'right',min:0,max:110,grid:{display:false},ticks:{color:'#10b981',callback:v=>v+'%'}}
       }
     }
-  });
+  }));
 }
 
 // ── Init ──────────────────────────────────────────────────
@@ -1756,8 +1827,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setDashDate();
   initDash();
   drawProduct();
-  // Set initial theme icon to sun (dark mode is default)
-  document.getElementById('themeIcon').innerHTML = SUN_SVG;
+  // Fix 6: themeIcon is already inline in HTML — no JS needed, no FOUC
 });
 </script>
 </body>
